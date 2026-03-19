@@ -1,0 +1,109 @@
+---
+---
+
+<section
+  class="rounded-2xl border border-white/10 bg-white/[0.02] p-6 shadow-soft"
+  data-feature-flags
+>
+  <h3 class="font-display text-xl tracking-tight">Feature Flags</h3>
+  <p class="mt-1 text-sm text-slate-400">
+    Live flag states — deployment decoupled from release
+  </p>
+
+  <div class="mt-5 space-y-3" data-feature-flags-list>
+    {Array.from({ length: 3 }).map((_, i) => (
+      <div
+        class="rounded-lg border border-white/5 bg-black/10 px-4 py-3"
+        key={i}
+      >
+        <div class="h-4 w-40 animate-pulse rounded bg-white/10"></div>
+        <div class="mt-2 h-4 w-24 animate-pulse rounded bg-white/10"></div>
+        <div class="mt-2 h-4 w-full animate-pulse rounded bg-white/10"></div>
+      </div>
+    ))}
+  </div>
+
+  <p class="mt-4 text-xs text-slate-500">
+    Managed via PATCH /v1/flags/{"{name}"}
+  </p>
+
+  <script type="module">
+    const root = document.querySelector("[data-feature-flags]");
+    if (!root) throw new Error("FeatureFlags root not found");
+
+    const listEl = root.querySelector("[data-feature-flags-list]");
+    if (!listEl) throw new Error("FeatureFlags list not found");
+
+    function formatFlagName(name) {
+      const cleaned = String(name ?? "").replace(/^flags\.deejay_api\./, "");
+      return cleaned
+        .split("_")
+        .filter(Boolean)
+        .map((word) => word[0].toUpperCase() + word.slice(1))
+        .join(" ");
+    }
+
+    function stateMarkup(enabled) {
+      if (enabled) {
+        return `
+          <span class="inline-flex items-center gap-2 text-green-400">
+            <span class="h-2 w-2 rounded-full bg-green-400"></span>
+            enabled
+          </span>
+        `;
+      }
+      return `
+        <span class="inline-flex items-center gap-2 text-red-400">
+          <span class="h-2 w-2 rounded-full bg-red-400"></span>
+          disabled
+        </span>
+      `;
+    }
+
+    async function load() {
+      const BASE = document.documentElement.dataset.apiUrl || "";
+      if (!BASE) {
+        root.classList.add("hidden");
+        return;
+      }
+
+      try {
+        const baseUrl = String(BASE).replace(/\/$/, "");
+        const res = await fetch(`${baseUrl}/v1/flags`, { cache: "no-store" });
+        if (!res.ok) {
+          root.classList.add("hidden");
+          return;
+        }
+
+        const json = await res.json();
+        const flags = json?.data ?? [];
+        if (!Array.isArray(flags) || flags.length === 0) {
+          root.classList.add("hidden");
+          return;
+        }
+
+        listEl.innerHTML = "";
+        flags.forEach((flag, idx) => {
+          const row = document.createElement("article");
+          row.className = "reveal rounded-lg border border-white/5 bg-black/10 px-4 py-3";
+          row.style.setProperty("--d", `${idx * 80}ms`);
+
+          row.innerHTML = `
+            <div class="flex items-center justify-between gap-3">
+              <h4 class="font-medium text-slate-100">${formatFlagName(flag?.name)}</h4>
+              ${stateMarkup(Boolean(flag?.enabled))}
+            </div>
+            <p class="mt-2 text-sm text-slate-400">${String(flag?.description ?? "")}</p>
+          `;
+          listEl.appendChild(row);
+        });
+      } catch {
+        // Fail silently.
+        root.classList.add("hidden");
+      }
+    }
+
+    void load();
+  </script>
+</section>
+
