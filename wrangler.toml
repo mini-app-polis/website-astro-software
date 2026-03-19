@@ -2,3 +2,5 @@ name = "website-astro-software"
 compatibility_date = "2024-01-01"
 pages_build_output_dir = "dist"
 
+[vars]
+PUBLIC_API_URL = "https://courteous-purpose-production.up.railway.app"
