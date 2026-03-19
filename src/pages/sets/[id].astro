@@ -7,7 +7,7 @@ export const prerender = false;
 
 const { id } = Astro.params;
 const set = await getSetDetail(String(id));
-console.log("[set detail] fetched:", set?.venue, set?.tracks?.length);
+console.log("[set detail] tracks:", set?.tracks?.length);
 
 if (!set) {
   return Astro.redirect("/sets");

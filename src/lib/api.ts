@@ -18,14 +18,22 @@ export interface SetListItem {
 
 export interface TrackListItem {
   id: string;
+  set_id: string;
+  set_date: string;
+  venue: string;
   play_order: number | null;
+  play_time: string | null;
+  label: string | null;
   title: string;
+  remix: string | null;
   artist: string;
+  comment: string | null;
   genre: string | null;
   bpm: number | null;
   release_year: number | null;
   length_secs: number | null;
   data_quality: string;
+  catalog_id: string | null;
 }
 
 export interface SetDetail extends SetListItem {
