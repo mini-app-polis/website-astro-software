@@ -1,3 +1,8 @@
+Version 0.2.1 — 2026-03-19
+
+"Updated DJ Sets Platform project description to mention
+feature flags."
+
 Version 0.2.0 — 2026-03-19
 
 "Added live Pipeline Evaluation section to homepage.
