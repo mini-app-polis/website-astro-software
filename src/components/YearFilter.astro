@@ -1,6 +1,10 @@
 ---
-export let years: number[] = [];
-export let selectedYear: number | "all" = "all";
+interface Props {
+  years?: number[];
+  selectedYear?: number | "all";
+}
+
+const { years = [], selectedYear = "all" } = Astro.props as Props;
 ---
 
 <div class="flex flex-wrap items-center gap-2">

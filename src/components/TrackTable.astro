@@ -1,7 +1,11 @@
 ---
 import type { TrackListItem } from "../lib/api";
 
-export let tracks: TrackListItem[] = [];
+interface Props {
+  tracks?: TrackListItem[];
+}
+
+const { tracks = [] } = Astro.props as Props;
 
 const nf = new Intl.NumberFormat("en-US");
 

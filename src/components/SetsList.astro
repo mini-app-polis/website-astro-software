@@ -1,9 +1,17 @@
 ---
 import YearFilter from "./YearFilter.astro";
 
-export let years: number[] = [];
-export let initialYear: number = 2026;
-export let pageSize: number = 50;
+interface Props {
+  years?: number[];
+  initialYear?: number;
+  pageSize?: number;
+}
+
+const {
+  years = [],
+  initialYear = 2026,
+  pageSize = 50,
+} = Astro.props as Props;
 ---
 
 <section

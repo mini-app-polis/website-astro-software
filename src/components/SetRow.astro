@@ -1,7 +1,11 @@
 ---
 import type { SetListItem } from "../lib/api";
 
-export let set: SetListItem;
+interface Props {
+  set: SetListItem;
+}
+
+const { set } = Astro.props as Props;
 
 const dateFmt = new Intl.DateTimeFormat("en-US", {
   month: "short",
