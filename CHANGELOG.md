@@ -1,3 +1,9 @@
+Version 0.1.3 — 2026-03-19
+
+"Fixed MIME type error on /sets page by inlining API fetch
+logic in client-side scripts. Removed module imports that
+do not resolve in Cloudflare Pages edge environment."
+
 Version 0.1.1 — 2026-03-19
 
 "Switched stats and catalog to client-side fetching.

@@ -39,7 +39,27 @@ export let pageSize: number = 50;
   </div>
 
   <script type="module">
-    import { getSets } from "../lib/api";
+    async function getSets(params = {}) {
+      const BASE = document.documentElement.dataset.apiUrl || "";
+      if (!BASE) return [];
+
+      try {
+        const qs = new URLSearchParams(
+          Object.entries(params).map(([k, v]) => [k, String(v)]),
+        ).toString();
+
+        const baseUrl = String(BASE).replace(/\/$/, "");
+        const url = `${baseUrl}/v1/sets${qs ? "?" + qs : ""}`;
+
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) return [];
+
+        const json = await res.json();
+        return json?.data ?? [];
+      } catch {
+        return [];
+      }
+    }
 
     const root = document.querySelector("[data-sets-root]");
     if (!root) throw new Error("Sets root not found");
