@@ -40,9 +40,7 @@
     const listEl = root.querySelector("[data-top-artists-list]");
     const errorEl = root.querySelector("[data-top-artists-error]");
 
-    const BASE =
-      document.documentElement.dataset.apiUrl ||
-      import.meta.env.PUBLIC_API_URL;
+    const BASE = document.documentElement.dataset.apiUrl || "";
 
     function showError() {
       if (!listEl || !errorEl) return;

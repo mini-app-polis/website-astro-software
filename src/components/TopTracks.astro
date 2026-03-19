@@ -38,9 +38,7 @@
     const listEl = root.querySelector("[data-top-tracks-list]");
     const errorEl = root.querySelector("[data-top-tracks-error]");
 
-    const BASE =
-      document.documentElement.dataset.apiUrl ||
-      import.meta.env.PUBLIC_API_URL;
+    const BASE = document.documentElement.dataset.apiUrl || "";
 
     function showError() {
       if (!listEl || !errorEl) return;

@@ -49,12 +49,25 @@ export interface ByYear {
   track_count: number;
 }
 
-const BASE = import.meta.env.PUBLIC_API_URL as string | undefined;
+function getBaseUrl(): string | undefined {
+  // Client-side: read from DOM where Base.astro exposes the environment value.
+  if (typeof document !== "undefined") {
+    const fromDom = document.documentElement.dataset.apiUrl;
+    if (fromDom) return fromDom;
+  }
+
+  // Server-side: fall back to Astro build-time environment when available.
+  const env = (import.meta as any).env?.PUBLIC_API_URL as
+    | string
+    | undefined;
+  return env;
+}
 
 async function apiFetch<T>(path: string, fallback: T): Promise<T> {
   try {
-    if (!BASE) return fallback;
-    const res = await fetch(`${BASE}${path}`);
+    const base = getBaseUrl();
+    if (!base) return fallback;
+    const res = await fetch(`${base}${path}`);
     if (!res.ok) return fallback;
     const json = await res.json();
     return ((json && "data" in json ? json.data : undefined) ??

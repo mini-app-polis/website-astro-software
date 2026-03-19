@@ -54,9 +54,7 @@ const stats = [
       if (errorEl) errorEl.classList.remove("hidden");
     }
 
-    const BASE =
-      document.documentElement.dataset.apiUrl ||
-      import.meta.env.PUBLIC_API_URL;
+    const BASE = document.documentElement.dataset.apiUrl || "";
 
     if (!BASE) {
       statEls.forEach((el) => {
