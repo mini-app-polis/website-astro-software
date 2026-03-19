@@ -49,23 +49,18 @@ export interface ByYear {
   track_count: number;
 }
 
-function getBaseUrl(): string | undefined {
-  // Client-side: read from DOM where Base.astro exposes the environment value.
-  if (typeof document !== "undefined") {
-    const fromDom = document.documentElement.dataset.apiUrl;
-    if (fromDom) return fromDom;
+export function getApiBase(): string {
+  // SSR / edge runtime — import.meta.env is available.
+  if (typeof document === "undefined") {
+    return (import.meta.env.PUBLIC_API_URL as string | undefined) ?? "";
   }
-
-  // Server-side: fall back to Astro build-time environment when available.
-  const env = (import.meta as any).env?.PUBLIC_API_URL as
-    | string
-    | undefined;
-  return env;
+  // Browser runtime — read from data attribute set by Base.astro.
+  return document.documentElement.dataset.apiUrl ?? "";
 }
 
 async function apiFetch<T>(path: string, fallback: T): Promise<T> {
   try {
-    const base = getBaseUrl();
+    const base = getApiBase();
     if (!base) return fallback;
     const res = await fetch(`${base}${path}`);
     if (!res.ok) return fallback;

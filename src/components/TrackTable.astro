@@ -43,6 +43,16 @@ function formatGenre(genre: string | null) {
       </tr>
     </thead>
     <tbody>
+      {tracks.length === 0 && (
+        <tr>
+          <td
+            colspan="6"
+            class="py-8 text-center text-sm text-slate-400"
+          >
+            No tracks found for this set.
+          </td>
+        </tr>
+      )}
       {tracks.map((t, idx) => (
         <tr
           class={`${

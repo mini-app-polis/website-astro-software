@@ -1,3 +1,8 @@
+Version 0.1.4 — 2026-03-19
+
+"Fixed SSR set detail page returning empty tracks. API base URL
+now resolves correctly in both SSR edge and browser contexts."
+
 Version 0.1.3 — 2026-03-19
 
 "Fixed MIME type error on /sets page by inlining API fetch
