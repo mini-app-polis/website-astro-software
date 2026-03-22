@@ -1,3 +1,9 @@
+Version 0.3.0 — 2026-03-22
+
+"Fixed project card layout on homepage. Added dedicated
+Pipeline Health page with filterable evaluation findings
+grouped by run. Added Pipeline nav link."
+
 Version 0.2.2 — 2026-03-19
 
 "Added live Feature Flags section to homepage. Surfaces

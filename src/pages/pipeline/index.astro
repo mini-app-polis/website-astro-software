@@ -1,0 +1,387 @@
+---
+import Page from "../../layouts/Page.astro";
+import EvaluationSummary from "../../components/EvaluationSummary.astro";
+
+const subtitle =
+  "AI evaluation findings from every pipeline run, evaluated by Claude against the engineering standards document.";
+---
+
+<Page title="Pipeline Health" subtitle={subtitle}>
+  <div class="space-y-12">
+    <section class="space-y-3">
+      <h2 class="font-display text-xl tracking-tight">Summary</h2>
+      <EvaluationSummary />
+    </section>
+
+    <section class="space-y-5" data-pipeline-browser>
+      <div>
+        <h2 class="font-display text-xl tracking-tight">Findings</h2>
+        <p class="mt-1 text-sm text-slate-400">
+          Browse individual findings from recent pipeline runs. Filter by severity and repository.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-mono text-slate-500">Severity</span>
+          <div class="flex flex-wrap items-center gap-2" data-severity-buttons>
+            <button
+              type="button"
+              data-severity=""
+              data-selected="true"
+              aria-pressed="true"
+              class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent"
+            >
+              All
+            </button>
+            <button
+              type="button"
+              data-severity="ERROR"
+              data-selected="false"
+              aria-pressed="false"
+              class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent"
+            >
+              ERROR
+            </button>
+            <button
+              type="button"
+              data-severity="WARN"
+              data-selected="false"
+              aria-pressed="false"
+              class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent"
+            >
+              WARN
+            </button>
+            <button
+              type="button"
+              data-severity="INFO"
+              data-selected="false"
+              aria-pressed="false"
+              class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent"
+            >
+              INFO
+            </button>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-mono text-slate-500">Repo</span>
+          <div class="flex flex-wrap items-center gap-2" data-repo-buttons>
+            <button
+              type="button"
+              data-repo=""
+              data-selected="true"
+              aria-pressed="true"
+              class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent"
+            >
+              All
+            </button>
+            <button
+              type="button"
+              data-repo="deejay-set-processor-dev"
+              data-selected="false"
+              aria-pressed="false"
+              class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent"
+            >
+              deejay-set-processor-dev
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <p
+        id="pipelineFindingsEmpty"
+        class="hidden rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center text-sm text-slate-400"
+      ></p>
+      <div id="pipelineFindingsList" class="space-y-8"></div>
+
+      <div class="flex justify-center pt-2">
+        <button
+          type="button"
+          id="pipelineLoadMore"
+          class="hidden rounded-full border border-white/10 bg-white/[0.02] px-5 py-2 text-sm font-medium text-slate-200 transition-colors hover:border-white/20 hover:text-slate-100 disabled:opacity-50"
+        >
+          Load more
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <script is:inline>
+    (function () {
+      var root = document.querySelector("[data-pipeline-browser]");
+      if (!root) return;
+
+      var listEl = document.getElementById("pipelineFindingsList");
+      var emptyEl = document.getElementById("pipelineFindingsEmpty");
+      var loadMoreBtn = document.getElementById("pipelineLoadMore");
+      if (!listEl || !emptyEl || !loadMoreBtn) return;
+
+      var BASE = document.documentElement.dataset.apiUrl || "";
+      var baseUrl = String(BASE).replace(/\/$/, "");
+
+      var allFindings = [];
+      var nextOffset = 0;
+      var pageSize = 50;
+      var hasMore = false;
+      var loading = false;
+      var selectedSeverity = "";
+      var selectedRepo = "";
+
+      var dateFmt = new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+      var timeFmt = new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+      });
+
+      function formatTs(iso) {
+        if (!iso) return "—";
+        var d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return "—";
+        return dateFmt.format(d) + " · " + timeFmt.format(d);
+      }
+
+      function formatDimension(raw) {
+        return String(raw || "")
+          .split("_")
+          .filter(Boolean)
+          .map(function (w) {
+            return w.charAt(0).toUpperCase() + w.slice(1);
+          })
+          .join(" ");
+      }
+
+      function normalizeSeverity(level) {
+        var s = String(level || "").toUpperCase();
+        if (s === "WARNING") return "WARN";
+        return s || "INFO";
+      }
+
+      function severityClass(level) {
+        var s = normalizeSeverity(level);
+        if (s === "ERROR") return "text-red-400 border-red-500/30 bg-red-500/10";
+        if (s === "WARN") return "text-amber-400 border-amber-500/30 bg-amber-500/10";
+        return "text-slate-300 border-slate-500/30 bg-slate-500/10";
+      }
+
+      function findingTs(f) {
+        return f.created_at || f.timestamp || f.most_recent || null;
+      }
+
+      function findingRepo(f) {
+        return String(f.repo || f.repository || "").trim();
+      }
+
+      function findingText(f) {
+        return String(f.finding || f.message || f.text || "");
+      }
+
+      function suggestionText(f) {
+        return String(f.suggestion || f.suggested_fix || f.remediation || "").trim();
+      }
+
+      function filterFindings(items) {
+        return items.filter(function (f) {
+          if (selectedSeverity) {
+            if (normalizeSeverity(f.severity) !== selectedSeverity) return false;
+          }
+          if (selectedRepo) {
+            if (findingRepo(f) !== selectedRepo) return false;
+          }
+          return true;
+        });
+      }
+
+      function groupByRun(findings) {
+        var map = new Map();
+        for (var i = 0; i < findings.length; i++) {
+          var f = findings[i];
+          var rid = f.run_id != null ? String(f.run_id) : "unknown";
+          if (!map.has(rid)) map.set(rid, []);
+          map.get(rid).push(f);
+        }
+        var runs = [];
+        map.forEach(function (items, runId) {
+          var maxTs = 0;
+          for (var j = 0; j < items.length; j++) {
+            var t = new Date(findingTs(items[j]) || 0).getTime();
+            if (!Number.isNaN(t) && t > maxTs) maxTs = t;
+          }
+          runs.push({ runId: runId, items: items, maxTs: maxTs });
+        });
+        runs.sort(function (a, b) {
+          return b.maxTs - a.maxTs;
+        });
+        return runs;
+      }
+
+      function setButtonGroup(container, attrName, value) {
+        var btns = container.querySelectorAll("button[" + attrName + "]");
+        for (var i = 0; i < btns.length; i++) {
+          var btn = btns[i];
+          var v = btn.getAttribute(attrName) || "";
+          var sel = v === value;
+          btn.setAttribute("data-selected", sel ? "true" : "false");
+          btn.setAttribute("aria-pressed", sel ? "true" : "false");
+        }
+      }
+
+      function render() {
+        var filtered = filterFindings(allFindings);
+        if (allFindings.length === 0) {
+          emptyEl.textContent = "No pipeline evaluations recorded yet.";
+          emptyEl.classList.remove("hidden");
+          listEl.innerHTML = "";
+          loadMoreBtn.classList.add("hidden");
+          return;
+        }
+        if (filtered.length === 0) {
+          emptyEl.textContent = "No findings match the selected filters.";
+          emptyEl.classList.remove("hidden");
+          listEl.innerHTML = "";
+          loadMoreBtn.classList.toggle("hidden", !hasMore);
+          return;
+        }
+        emptyEl.classList.add("hidden");
+
+        var runs = groupByRun(filtered);
+        var html = "";
+        for (var r = 0; r < runs.length; r++) {
+          var run = runs[r];
+          var headerTs = findingTs(run.items[0]);
+          for (var k = 1; k < run.items.length; k++) {
+            var tk = new Date(findingTs(run.items[k]) || 0).getTime();
+            var th = new Date(headerTs || 0).getTime();
+            if (!Number.isNaN(tk) && tk > th) headerTs = findingTs(run.items[k]);
+          }
+          html +=
+            '<section class="space-y-3"><h3 class="font-mono text-sm text-slate-300">Run ' +
+            escapeHtml(run.runId) +
+            " · " +
+            escapeHtml(formatTs(headerTs)) +
+            '</h3><div class="space-y-3">';
+          for (var j = 0; j < run.items.length; j++) {
+            var f = run.items[j];
+            var sev = normalizeSeverity(f.severity);
+            var sc = severityClass(sev);
+            var dim = formatDimension(f.dimension) || "Unknown";
+            var ft = findingText(f);
+            var sug = suggestionText(f);
+            var ts = formatTs(findingTs(f));
+            var ridShort =
+              String(f.run_id != null ? f.run_id : "")
+                .slice(0, 8) || "—";
+            html += '<article class="rounded-xl border border-white/10 bg-black/10 p-4">';
+            html += '<div class="flex flex-wrap items-start justify-between gap-3">';
+            html +=
+              '<span class="inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-xs font-mono ' +
+              sc +
+              '">' +
+              escapeHtml(sev) +
+              "</span>";
+            html += '<div class="min-w-0 flex-1 space-y-2">';
+            html +=
+              '<div class="text-sm font-medium text-slate-200">' + escapeHtml(dim) + "</div>";
+            html += '<p class="text-sm leading-relaxed text-slate-300">' + escapeHtml(ft) + "</p>";
+            if (sug) {
+              html +=
+                '<p class="text-xs leading-relaxed text-slate-400">' + escapeHtml(sug) + "</p>";
+            }
+            html += "</div></div>";
+            html +=
+              '<div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-white/5 pt-3 text-xs text-slate-500">';
+            html +=
+              '<span class="font-mono text-slate-400" title="' +
+              escapeHtml(String(f.run_id != null ? f.run_id : "")) +
+              '">' +
+              escapeHtml(ridShort) +
+              "</span>";
+            html += "<span>" + escapeHtml(ts) + "</span>";
+            html += "</div></article>";
+          }
+          html += "</div></section>";
+        }
+        listEl.innerHTML = html;
+        loadMoreBtn.classList.toggle("hidden", !hasMore);
+      }
+
+      function escapeHtml(s) {
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      async function fetchPage() {
+        if (!baseUrl) {
+          allFindings = [];
+          hasMore = false;
+          render();
+          return;
+        }
+        if (loading) return;
+        loading = true;
+        loadMoreBtn.disabled = true;
+        try {
+          var qs =
+            "limit=" +
+            encodeURIComponent(String(pageSize)) +
+            "&offset=" +
+            encodeURIComponent(String(nextOffset));
+          var res = await fetch(baseUrl + "/v1/evaluations?" + qs, { cache: "no-store" });
+          if (!res.ok) {
+            allFindings = [];
+            hasMore = false;
+            render();
+            return;
+          }
+          var json = await res.json();
+          var chunk = json && json.data;
+          if (!Array.isArray(chunk)) chunk = [];
+          for (var i = 0; i < chunk.length; i++) allFindings.push(chunk[i]);
+          hasMore = chunk.length === pageSize;
+          nextOffset += chunk.length;
+        } catch (e) {
+          allFindings = [];
+          hasMore = false;
+        }
+        loading = false;
+        loadMoreBtn.disabled = false;
+        render();
+      }
+
+      var sevWrap = root.querySelector("[data-severity-buttons]");
+      var repoWrap = root.querySelector("[data-repo-buttons]");
+      if (sevWrap) {
+        sevWrap.addEventListener("click", function (e) {
+          var t = e.target;
+          if (t.tagName !== "BUTTON") return;
+          var v = t.getAttribute("data-severity");
+          selectedSeverity = v == null ? "" : v;
+          setButtonGroup(sevWrap, "data-severity", selectedSeverity);
+          render();
+        });
+      }
+      if (repoWrap) {
+        repoWrap.addEventListener("click", function (e) {
+          var t = e.target;
+          if (t.tagName !== "BUTTON") return;
+          var v = t.getAttribute("data-repo");
+          selectedRepo = v == null ? "" : v;
+          setButtonGroup(repoWrap, "data-repo", selectedRepo);
+          render();
+        });
+      }
+
+      loadMoreBtn.addEventListener("click", function () {
+        void fetchPage();
+      });
+
+      void fetchPage();
+    })();
+  </script>
+</Page>

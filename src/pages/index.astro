@@ -24,9 +24,10 @@ const projects = [
   {
     title: "AI Pipeline Evaluation",
     description:
-      "AI-assisted conformance checks after pipeline runs with structured storage + queryable findings.",
-    status: "In Progress — Phase 3",
-    link: undefined,
+      "AI-assisted pipeline conformance checks running after every pipeline execution. Findings stored in PostgreSQL and queryable via API. See Pipeline Health page for live data.",
+    status: "Live",
+    link: "/pipeline",
+    linkLabel: "Pipeline Health",
   },
 ] as const;
 ---
@@ -50,11 +51,11 @@ const projects = [
 
     <StatsBar />
 
-    <div class="grid gap-5 md:grid-cols-3">
+    <div class="grid gap-5 md:grid-cols-3 items-stretch">
       {projects.map((p) => (
-        <a href="/projects" class="block" key={p.title}>
+        <div class="h-full">
           <ProjectCard {...p} />
-        </a>
+        </div>
       ))}
     </div>
 
