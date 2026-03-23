@@ -59,6 +59,45 @@
         return "text-slate-300 border-slate-500/30 bg-slate-500/10";
       }
 
+      function normalizeSeverity(level) {
+        const s = String(level ?? "INFO").toUpperCase();
+        if (s === "WARNING") return "WARN";
+        return s;
+      }
+
+      function collapseConsecutiveInfo(rows) {
+        const collapsed = [];
+        for (const row of rows) {
+          const sev = normalizeSeverity(row?.severity);
+          const msg = String(row?.finding ?? row?.message ?? row?.text ?? "");
+          const dim = String(row?.dimension ?? "");
+
+          if (sev !== "INFO") {
+            collapsed.push({ ...row, _repeatRuns: 1, _severity: sev });
+            continue;
+          }
+
+          const prev = collapsed[collapsed.length - 1];
+          if (
+            prev &&
+            prev._severity === "INFO" &&
+            String(prev?.dimension ?? "") === dim &&
+            String(prev?._message ?? prev?.finding ?? prev?.message ?? prev?.text ?? "") === msg
+          ) {
+            prev._repeatRuns = Number(prev._repeatRuns || 1) + 1;
+            continue;
+          }
+
+          collapsed.push({
+            ...row,
+            _repeatRuns: 1,
+            _severity: "INFO",
+            _message: msg,
+          });
+        }
+        return collapsed;
+      }
+
       async function load() {
         try {
           const res = await fetch(url, { cache: "no-store" });
@@ -73,20 +112,52 @@
             return;
           }
 
+          const raw = data.slice(0, 50);
+          const collapsed = collapseConsecutiveInfo(raw);
+          const pinned = [
+            ...collapsed.filter((f) => {
+              const sev = normalizeSeverity(f?._severity ?? f?.severity);
+              return sev === "ERROR" || sev === "WARN";
+            }),
+            ...collapsed.filter((f) => normalizeSeverity(f?._severity ?? f?.severity) === "INFO"),
+          ].slice(0, 5);
+
           listEl.innerHTML = "";
-          data.slice(0, 5).forEach((f, idx) => {
-            const severity = String(f?.severity ?? "INFO").toUpperCase();
+
+          let markedError = false;
+          let markedWarn = false;
+
+          pinned.forEach((f, idx) => {
+            const severity = normalizeSeverity(f?._severity ?? f?.severity);
             const timestamp = f?.created_at ?? f?.most_recent ?? f?.timestamp ?? null;
             const findingText = f?.finding ?? f?.message ?? f?.text ?? "";
             const row = document.createElement("article");
             row.className = "reveal rounded-lg border border-white/5 bg-black/10 px-4 py-3";
             row.style.setProperty("--d", `${idx * 100}ms`);
 
+            if (severity === "ERROR" && !markedError) {
+              row.id = "finding-error-first";
+              markedError = true;
+            }
+            if (severity === "WARN" && !markedWarn) {
+              row.id = "finding-warn-first";
+              markedWarn = true;
+            }
+
+            const repeatRuns = Number(f?._repeatRuns || 1);
+            const repeatBadge =
+              severity === "INFO" && repeatRuns > 1
+                ? `<span class="inline-flex items-center rounded-full border border-slate-500/30 bg-slate-500/10 px-2 py-0.5 text-[11px] font-mono text-slate-300">× ${repeatRuns} runs</span>`
+                : "";
+
             row.innerHTML = `
               <div class="flex items-center justify-between gap-3">
-                <div class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-mono ${severityClass(
-                  severity,
-                )}">${severity}</div>
+                <div class="flex items-center gap-2">
+                  <div class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-mono ${severityClass(
+                    severity,
+                  )}">${severity}</div>
+                  ${repeatBadge}
+                </div>
                 <div class="text-xs text-slate-400">${relativeTime(timestamp)}</div>
               </div>
               <div class="mt-2 text-sm font-medium text-slate-200">${formatDimension(
