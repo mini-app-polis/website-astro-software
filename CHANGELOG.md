@@ -1,3 +1,10 @@
+# 1.0.0 (2026-03-23)
+
+
+### Bug Fixes
+
+* add missing API endpoints to CORS documentation ([33821c4](https://github.com/kaianolevine/website-astro-software/commit/33821c4404d0c409c2913cacbffc13f0d3d6b81e))
+
 # Changelog
 
 ## [0.3.1] - 2026-03-22
