@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/kaianolevine/website-astro-software/compare/v1.1.0...v1.1.1) (2026-03-23)
+
+
+### Bug Fixes
+
+* managing updates for eval ui ([b419e61](https://github.com/kaianolevine/website-astro-software/commit/b419e61acdd4fec593469ad1775e19bfcafa5d5b))
+
 # [1.1.0](https://github.com/kaianolevine/website-astro-software/compare/v1.0.0...v1.1.0) (2026-03-23)
 
 
