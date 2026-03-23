@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/kaianolevine/website-astro-software/compare/v1.1.1...v1.2.0) (2026-03-23)
+
+
+### Features
+
+* surface it as a badge on each finding ([db69d80](https://github.com/kaianolevine/website-astro-software/commit/db69d80e326ac3af4ae0d3baaf74263a751020d4))
+
 ## [1.1.1](https://github.com/kaianolevine/website-astro-software/compare/v1.1.0...v1.1.1) (2026-03-23)
 
 
