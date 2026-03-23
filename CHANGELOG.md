@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/kaianolevine/website-astro-software/compare/v1.0.0...v1.1.0) (2026-03-23)
+
+
+### Features
+
+* adding live music page ([09103c3](https://github.com/kaianolevine/website-astro-software/commit/09103c31d74eaab77c6e56ed41a50dc01bb3fb1a))
+
 # 1.0.0 (2026-03-23)
 
 
