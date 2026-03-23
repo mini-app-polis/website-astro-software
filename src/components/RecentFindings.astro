@@ -65,6 +65,14 @@
         return s;
       }
 
+      function sourceLabel(source) {
+        if (!source) return null;
+        if (source === "prefect_webhook") return "automation";
+        if (source === "flow_hook") return "crash hook";
+        if (source === "flow_inline") return "pipeline";
+        return source;
+      }
+
       function collapseConsecutiveInfo(rows) {
         const collapsed = [];
         for (const row of rows) {
@@ -149,6 +157,10 @@
               severity === "INFO" && repeatRuns > 1
                 ? `<span class="inline-flex items-center rounded-full border border-slate-500/30 bg-slate-500/10 px-2 py-0.5 text-[11px] font-mono text-slate-300">× ${repeatRuns} runs</span>`
                 : "";
+            const src = sourceLabel(f?.source);
+            const sourceBadge = src
+              ? `<span class="inline-flex items-center rounded-full border border-slate-600/40 bg-slate-700/30 px-2 py-0.5 text-[11px] font-mono text-slate-400">${src}</span>`
+              : "";
 
             row.innerHTML = `
               <div class="flex items-center justify-between gap-3">
@@ -156,6 +168,7 @@
                   <div class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-mono ${severityClass(
                     severity,
                   )}">${severity}</div>
+                  ${sourceBadge}
                   ${repeatBadge}
                 </div>
                 <div class="text-xs text-slate-400">${relativeTime(timestamp)}</div>
