@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/kaianolevine/website-astro-software/compare/v1.2.0...v1.3.0) (2026-03-23)
+
+
+### Features
+
+* adding flow name information ([e3ff2d3](https://github.com/kaianolevine/website-astro-software/commit/e3ff2d30287ff003e6e47e16e0f4396338dbcb75))
+
 # [1.2.0](https://github.com/kaianolevine/website-astro-software/compare/v1.1.1...v1.2.0) (2026-03-23)
 
 
