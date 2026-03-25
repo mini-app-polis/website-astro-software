@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/kaianolevine/website-astro-software/compare/v1.3.0...v1.4.0) (2026-03-25)
+
+
+### Features
+
+* adding booking page ([bd36bbd](https://github.com/kaianolevine/website-astro-software/commit/bd36bbd69d1c826ca12d4f78c04470a1b512f0ba))
+
 # [1.3.0](https://github.com/kaianolevine/website-astro-software/compare/v1.2.0...v1.3.0) (2026-03-23)
 
 
