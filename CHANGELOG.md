@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.6.0...v1.7.0) (2026-03-29)
+
+
+### Features
+
+* removing wcs heavy content for display ([bd79a9b](https://github.com/mini-app-polis/website-astro-software/commit/bd79a9b2fd0ee87129f7071642eee5d6a8371447))
+
 # [1.6.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.5.0...v1.6.0) (2026-03-29)
 
 
