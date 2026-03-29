@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.5.0...v1.6.0) (2026-03-29)
+
+
+### Features
+
+* **pipeline:** build repo filter buttons from API data ([1fbc123](https://github.com/mini-app-polis/website-astro-software/commit/1fbc1237589993baa0de321006f25ef0e60dfab3))
+
 # [1.5.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.4.3...v1.5.0) (2026-03-29)
 
 
