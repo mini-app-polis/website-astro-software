@@ -11,11 +11,8 @@
   </p>
 
   <div class="mt-5 space-y-3" data-feature-flags-list>
-    {Array.from({ length: 3 }).map((_, i) => (
-      <div
-        class="rounded-lg border border-white/5 bg-black/10 px-4 py-3"
-        key={i}
-      >
+    {Array.from({ length: 3 }).map(() => (
+      <div class="rounded-lg border border-white/5 bg-black/10 px-4 py-3">
         <div class="h-4 w-40 animate-pulse rounded bg-white/10"></div>
         <div class="mt-2 h-4 w-24 animate-pulse rounded bg-white/10"></div>
         <div class="mt-2 h-4 w-full animate-pulse rounded bg-white/10"></div>

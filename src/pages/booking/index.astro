@@ -44,7 +44,7 @@ const turnstileSiteKey = "0x4AAAAAACXUS6RYhJCvPzZg";
   ></script>
 
   <script>
-    function onTurnstileVerified(token) {
+    function onTurnstileVerified(_token: string) {
       const content = document.getElementById("bookingContent");
       if (!content) return;
       content.classList.remove("hidden");
