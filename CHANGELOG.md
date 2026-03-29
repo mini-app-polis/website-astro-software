@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/mini-app-polis/website-astro-software/compare/v1.7.0...v1.7.1) (2026-03-29)
+
+
+### Bug Fixes
+
+* link to music data ([c03c3db](https://github.com/mini-app-polis/website-astro-software/commit/c03c3db18b3b8be416e21d6cc5ac44ed59a98ee9))
+
 # [1.7.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.6.0...v1.7.0) (2026-03-29)
 
 
