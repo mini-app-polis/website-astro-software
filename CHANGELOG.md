@@ -1,3 +1,10 @@
+## [1.4.2](https://github.com/kaianolevine/website-astro-software/compare/v1.4.1...v1.4.2) (2026-03-29)
+
+
+### Bug Fixes
+
+* content update ([87b0cac](https://github.com/kaianolevine/website-astro-software/commit/87b0cacfe6ae64f0148f4538b9212caec290a285))
+
 ## [1.4.1](https://github.com/kaianolevine/website-astro-software/compare/v1.4.0...v1.4.1) (2026-03-26)
 
 
