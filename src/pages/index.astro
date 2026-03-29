@@ -10,21 +10,21 @@ const projects = [
   {
     title: "DJ Sets Platform",
     description:
-      "CSV exports -> normalized pipeline -> FastAPI REST API serving live DJ history.",
+      "CSV exports from DJ software → deejay-cog normalization pipeline → api-kaianolevine-com REST API. 10 years of set history in PostgreSQL, served live.",
     status: "Live",
-    link: "https://github.com/kaianolevine/deejay-marvel-api",
+    link: "https://github.com/mini-app-polis/deejay-cog",
   },
   {
     title: "Automation Ecosystem",
     description:
-      "Python processors on shared utilities: ingestion, naming/tagging, notes, and Spotify output.",
+      "Python cogs on shared utilities (common-python-utils): watcher-cog polls Drive, deejay-cog ingests sets, evaluator-cog runs AI conformance checks after every pipeline run.",
     status: "Active",
-    link: "https://github.com/kaianolevine/kaiano-common-utils",
+    link: "https://github.com/mini-app-polis",
   },
   {
     title: "AI Pipeline Evaluation",
     description:
-      "AI-assisted pipeline conformance checks running after every pipeline execution. Findings stored in PostgreSQL and queryable via API. See Pipeline Health page for live data.",
+      "After every pipeline run, Claude evaluates conformance against the ecosystem standards document. Findings stored in PostgreSQL and queryable via API. See Pipeline Health for live data.",
     status: "Live",
     link: "/pipeline",
     linkLabel: "Pipeline Health",

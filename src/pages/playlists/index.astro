@@ -1,0 +1,106 @@
+---
+import Page from "../../layouts/Page.astro";
+---
+
+<Page
+  title="Playlists"
+  subtitle="Spotify playlists generated automatically from DJ set history."
+>
+  <div id="playlistsLoading" class="text-sm text-slate-400">Loading…</div>
+  <div id="playlistsEmpty" class="hidden text-sm text-slate-400">
+    No playlists available yet.
+  </div>
+  <div id="playlistsError" class="hidden text-sm text-slate-400">
+    Unable to load playlists.
+  </div>
+  <div
+    id="playlistsList"
+    class="hidden grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+  ></div>
+
+  <script is:inline>
+    (function () {
+      var BASE = document.documentElement.dataset.apiUrl || "";
+      var baseUrl = String(BASE).replace(/\/$/, "");
+
+      var loadingEl = document.getElementById("playlistsLoading");
+      var emptyEl = document.getElementById("playlistsEmpty");
+      var errorEl = document.getElementById("playlistsError");
+      var listEl = document.getElementById("playlistsList");
+
+      function show(el) {
+        el.classList.remove("hidden");
+      }
+      function hide(el) {
+        el.classList.add("hidden");
+      }
+
+      function escapeHtml(s) {
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      async function load() {
+        if (!baseUrl) {
+          hide(loadingEl);
+          show(errorEl);
+          return;
+        }
+        try {
+          var res = await fetch(baseUrl + "/v1/spotify/playlists", {
+            cache: "no-store",
+          });
+          if (!res.ok) throw new Error("bad response");
+          var json = await res.json();
+          var items = (json && json.data) || json || [];
+          if (!Array.isArray(items) || items.length === 0) {
+            hide(loadingEl);
+            show(emptyEl);
+            return;
+          }
+          var html = "";
+          for (var i = 0; i < items.length; i++) {
+            var p = items[i];
+            var name = escapeHtml(p.name || p.playlist_name || "Untitled");
+            var count = p.tracks_total != null ? p.tracks_total : (p.track_count != null ? p.track_count : null);
+            var url = escapeHtml(p.url || p.spotify_url || p.external_url || "");
+            html +=
+              '<div class="rounded-2xl border border-white/10 bg-white/[0.02] p-5 shadow-soft flex flex-col gap-3">';
+            html +=
+              '<div class="font-display text-base tracking-tight text-slate-100">' +
+              name +
+              "</div>";
+            if (count != null) {
+              html +=
+                '<div class="text-xs font-mono text-slate-400">' +
+                escapeHtml(String(count)) +
+                " tracks</div>";
+            }
+            if (url) {
+              html +=
+                '<a href="' +
+                url +
+                '" target="_blank" rel="noreferrer" ' +
+                'class="mt-auto inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 font-mono text-xs font-semibold text-black transition-opacity hover:opacity-90 w-fit">' +
+                "Open on Spotify" +
+                '<span aria-hidden="true">↗</span>' +
+                "</a>";
+            }
+            html += "</div>";
+          }
+          listEl.innerHTML = html;
+          hide(loadingEl);
+          show(listEl);
+        } catch (e) {
+          hide(loadingEl);
+          show(errorEl);
+        }
+      }
+
+      void load();
+    })();
+  </script>
+</Page>

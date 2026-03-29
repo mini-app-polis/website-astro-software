@@ -115,3 +115,14 @@ export const getTopTracks = (limit = 20) =>
 
 export const getByYear = () => apiFetch<ByYear[]>("/v1/stats/by-year", []);
 
+export interface SpotifyPlaylist {
+  id: string;
+  name: string;
+  spotify_url: string | null;
+  tracks_total: number | null;
+  snapshot_id: string | null;
+}
+
+export const getPlaylists = () =>
+  apiFetch<SpotifyPlaylist[]>("/v1/spotify/playlists", []);
+

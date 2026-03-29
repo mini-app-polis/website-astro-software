@@ -1,0 +1,167 @@
+---
+import Page from "../../layouts/Page.astro";
+
+type EcosystemService = {
+  id: string;
+  description: string;
+  host: string;
+  repo: string | null;
+  url?: string;
+};
+
+const layers: {
+  label: string;
+  color: string;
+  borderColor: string;
+  bgColor: string;
+  services: EcosystemService[];
+}[] = [
+  {
+    label: "Orchestration",
+    color: "text-violet-400",
+    borderColor: "border-violet-500/30",
+    bgColor: "bg-violet-500/5",
+    services: [
+      {
+        id: "watcher-cog",
+        description: "Polls Google Drive every minute. Fires Prefect flow runs on new files.",
+        host: "Railway",
+        repo: "https://github.com/mini-app-polis/watcher-cog",
+      },
+      {
+        id: "Prefect Cloud",
+        description: "Single orchestration plane. All pipeline scheduling and observability.",
+        host: "Prefect Cloud",
+        repo: null,
+      },
+    ],
+  },
+  {
+    label: "Processing (Cogs)",
+    color: "text-sky-400",
+    borderColor: "border-sky-500/30",
+    bgColor: "bg-sky-500/5",
+    services: [
+      {
+        id: "deejay-cog",
+        description: "DJ set CSV processor. Normalizes and ingests set data into PostgreSQL.",
+        host: "Railway",
+        repo: "https://github.com/mini-app-polis/deejay-cog",
+      },
+      {
+        id: "evaluator-cog",
+        description: "Post-pipeline AI evaluation. Checks conformance against ecosystem standards, writes findings to PostgreSQL.",
+        host: "Railway",
+        repo: "https://github.com/mini-app-polis/evaluator-cog",
+      },
+    ],
+  },
+  {
+    label: "Shared Libraries",
+    color: "text-emerald-400",
+    borderColor: "border-emerald-500/30",
+    bgColor: "bg-emerald-500/5",
+    services: [
+      {
+        id: "common-python-utils",
+        description: "Shared Python utilities: Google API client, LLM client, structured logging, API client. All cogs depend on this.",
+        host: "PyPI (git)",
+        repo: "https://github.com/mini-app-polis/common-python-utils",
+      },
+    ],
+  },
+  {
+    label: "API",
+    color: "text-amber-400",
+    borderColor: "border-amber-500/30",
+    bgColor: "bg-amber-500/5",
+    services: [
+      {
+        id: "api-kaianolevine-com",
+        description: "Primary ecosystem API. DJ sets, catalog, evaluations, feature flags, contact, resume. FastAPI on Railway + PostgreSQL.",
+        host: "Railway",
+        repo: "https://github.com/mini-app-polis/api-kaianolevine-com",
+        url: "https://api.kaianolevine.com",
+      },
+    ],
+  },
+  {
+    label: "Sites",
+    color: "text-rose-400",
+    borderColor: "border-rose-500/30",
+    bgColor: "bg-rose-500/5",
+    services: [
+      {
+        id: "website-astro-software",
+        description: "This site. Software portfolio powered by live data from the API.",
+        host: "Cloudflare Pages",
+        repo: "https://github.com/kaianolevine/website-astro-software",
+        url: "https://kaianolevine.com",
+      },
+      {
+        id: "wcs.kaianolevine.com",
+        description: "West Coast Swing personal site. Astro on Cloudflare Pages.",
+        host: "Cloudflare Pages",
+        repo: null,
+        url: "https://wcs.kaianolevine.com",
+      },
+    ],
+  },
+];
+---
+
+<Page
+  title="Ecosystem"
+  subtitle="The full service map — cogs, APIs, and sites that make up this platform."
+>
+  <div class="space-y-8">
+    {layers.map((layer) => (
+      <section class="space-y-3">
+        <h2 class={`font-display text-base tracking-tight ${layer.color}`}>
+          {layer.label}
+        </h2>
+        <div class="grid gap-3 sm:grid-cols-2">
+          {layer.services.map((svc) => (
+            <div
+              class={`rounded-xl border ${layer.borderColor} ${layer.bgColor} p-4 space-y-2`}
+            >
+              <div class="flex items-start justify-between gap-2">
+                <span class="font-mono text-sm font-semibold text-slate-100">
+                  {svc.id}
+                </span>
+                <span class="shrink-0 rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 font-mono text-xs text-slate-400">
+                  {svc.host}
+                </span>
+              </div>
+              <p class="text-xs leading-relaxed text-slate-400">
+                {svc.description}
+              </p>
+              <div class="flex flex-wrap gap-3 pt-1">
+                {svc.repo && (
+                  <a
+                    href={svc.repo}
+                    target="_blank"
+                    rel="noreferrer"
+                    class="font-mono text-xs text-slate-400 transition-colors hover:text-slate-100"
+                  >
+                    GitHub ↗
+                  </a>
+                )}
+                {svc.url && (
+                  <a
+                    href={svc.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    class="font-mono text-xs text-slate-400 transition-colors hover:text-slate-100"
+                  >
+                    {svc.url.replace("https://", "")} ↗
+                  </a>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    ))}
+  </div>
+</Page>

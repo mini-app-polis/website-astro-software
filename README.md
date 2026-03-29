@@ -1,28 +1,49 @@
 # website-astro-software
 
-Technical portfolio for software engineering, powered by live data from the `deejay-marvel-api` FastAPI service.
+Technical portfolio for software engineering, powered by live data from `api-kaianolevine-com`.
 
 ## Audience
 
 Built for potential employers and clients who want proof that a working engineering system exists behind the projects.
 
-## Local development
+## Prerequisites
+
+- Node.js 22+
+- npm
+
+## Running locally
 
 ```bash
 npm install
+```
+
+Copy the example env file and fill in values:
+
+```bash
+cp .env.example .env
+```
+
+Start the dev server:
+
+```bash
 npm run dev
 ```
 
-Open the URL shown in the terminal.
+Run type-checking:
+
+```bash
+npm run check
+```
 
 ## Environment variables
 
-`PUBLIC_API_URL`  
-Base URL for the FastAPI service (must be publicly reachable from the browser).
+| Variable | Description |
+|---|---|
+| `PUBLIC_API_URL` | Base URL for the FastAPI service (must be publicly reachable from the browser) |
 
 Example:
-```bash
-PUBLIC_API_URL=https://your-api-url.railway.app
+```
+PUBLIC_API_URL=https://api.kaianolevine.com
 ```
 
 ## Build
@@ -33,51 +54,35 @@ npm run build
 
 ## Versioning
 
-This repo uses semantic-release for automated versioning.
-Versions are determined automatically from commit messages
-on merge to main:
+This repo uses semantic-release for automated versioning on merge to `main`.
 
-- feat: → minor version bump (0.3.1 → 0.4.0)
-- fix: → patch version bump (0.3.1 → 0.3.2)
-- feat!: or BREAKING CHANGE → major bump (0.3.1 → 1.0.0)
-- chore/docs/refactor/test/ci → no version bump
+- `feat:` → minor bump
+- `fix:` → patch bump
+- `feat!:` / `BREAKING CHANGE` → major bump
+- `chore/docs/refactor/test/ci` → no bump
 
-Never manually edit the version in package.json.
-Never manually edit CHANGELOG.md.
-Both are managed automatically on merge to main.
-
-## Tests / Quality checks
-
-This project currently uses build-time verification (Astro type-check + compile).
-
-```bash
-npm run check
-```
-
-If you add automated tests later (e.g., API contract tests), list them here.
+Never manually edit `package.json` version or `CHANGELOG.md`. Both are managed automatically.
 
 ## Deploy (Cloudflare Pages)
 
 1. Connect this Git repository in Cloudflare Pages.
-2. Set the environment variable `PUBLIC_API_URL` in the Pages project settings.
+2. Set `PUBLIC_API_URL` in Pages environment variables (not as a secret — it's build-time and baked into JS).
 3. Build command: `astro build`
 4. Output directory: `dist`
 
 ## CORS requirement
 
-The frontend makes browser requests to your FastAPI service, so `PUBLIC_API_URL` must support CORS for the Cloudflare Pages domain.
+The frontend makes browser requests directly to `PUBLIC_API_URL`, so the API must allow the Cloudflare Pages domain in its `CORS_ORIGINS`.
 
-### Frontend-called endpoints
+### Endpoints called client-side
 
-- `GET /v1/stats/overview` (client-side StatsBar)
-- `GET /v1/sets?year=&limit=&offset=` (client-side sets browser)
-- `GET /v1/stats/top-artists?limit=` (client-side catalog)
-- `GET /v1/stats/top-tracks?limit=` (client-side catalog)
-- `GET /v1/evaluations/summary` (client-side evaluation summary)
-- `GET /v1/flags` (client-side FeatureFlags)
-- `GET /v1/evaluations?limit=5` (client-side recent findings)
-
-### Backend requirement
-
-Add CORS handling (e.g. `CORSMiddleware`) in your FastAPI app before deploying.
-
+- `GET /v1/stats/overview`
+- `GET /v1/sets`
+- `GET /v1/sets/:id`
+- `GET /v1/stats/top-artists`
+- `GET /v1/stats/top-tracks`
+- `GET /v1/evaluations/summary`
+- `GET /v1/evaluations`
+- `GET /v1/flags`
+- `GET /v1/live-plays`
+- `GET /v1/spotify/playlists`
