@@ -1,3 +1,10 @@
+## [1.7.3](https://github.com/mini-app-polis/website-astro-software/compare/v1.7.2...v1.7.3) (2026-03-30)
+
+
+### Bug Fixes
+
+* footer format ([6624eee](https://github.com/mini-app-polis/website-astro-software/commit/6624eee398a4720d4874caa14ef67b47868ad90b))
+
 ## [1.7.2](https://github.com/mini-app-polis/website-astro-software/compare/v1.7.1...v1.7.2) (2026-03-30)
 
 
