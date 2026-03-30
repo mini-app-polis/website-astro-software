@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.7.4...v1.8.0) (2026-03-30)
+
+
+### Features
+
+* adding ecosystem standards at build time ([0c79ed9](https://github.com/mini-app-polis/website-astro-software/commit/0c79ed97c5fc1fb20f6bde60cd4e447f67c79490))
+
 ## [1.7.4](https://github.com/mini-app-polis/website-astro-software/compare/v1.7.3...v1.7.4) (2026-03-30)
 
 
