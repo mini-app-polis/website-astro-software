@@ -77,6 +77,20 @@ const subtitle =
             </button>
           </div>
         </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-mono text-slate-500">Dimension</span>
+          <div class="flex flex-wrap items-center gap-2" data-dimension-buttons>
+            <button
+              type="button"
+              data-dimension=""
+              data-selected="true"
+              aria-pressed="true"
+              class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent"
+            >
+              All
+            </button>
+          </div>
+        </div>
       </div>
 
       <p
@@ -117,6 +131,7 @@ const subtitle =
       var loading = false;
       var selectedSeverity = "";
       var selectedRepo = "";
+      var selectedDimension = "";
 
       var dateFmt = new Intl.DateTimeFormat("en-US", {
         month: "short",
@@ -160,6 +175,10 @@ const subtitle =
         return String(f.repo || f.repository || "").trim();
       }
 
+      function findingDimension(f) {
+        return String(f.dimension || "").trim();
+      }
+
       function findingText(f) {
         return String(f.finding || f.message || f.text || "");
       }
@@ -175,6 +194,9 @@ const subtitle =
           }
           if (selectedRepo) {
             if (findingRepo(f) !== selectedRepo) return false;
+          }
+          if (selectedDimension) {
+            if (findingDimension(f) !== selectedDimension) return false;
           }
           return true;
         });
@@ -243,6 +265,39 @@ const subtitle =
             "rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent";
           btn.textContent = repos[k];
           repoWrap.appendChild(btn);
+        }
+      }
+
+      function buildDimensionButtons(findings) {
+        if (!dimWrap) return;
+        var dims = [];
+        var seen = {};
+        for (var i = 0; i < findings.length; i++) {
+          var d = findingDimension(findings[i]);
+          if (d && !seen[d]) {
+            seen[d] = true;
+            dims.push(d);
+          }
+        }
+        dims.sort();
+        var existing = dimWrap.querySelectorAll("button[data-dimension]:not([data-dimension=''])");
+        for (var j = 0; j < existing.length; j++) existing[j].remove();
+        for (var k = 0; k < dims.length; k++) {
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.setAttribute("data-dimension", dims[k]);
+          btn.setAttribute("data-selected", "false");
+          btn.setAttribute("aria-pressed", "false");
+          btn.className =
+            "rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent";
+          btn.textContent = dims[k]
+            .split("_")
+            .filter(Boolean)
+            .map(function (w) {
+              return w.charAt(0).toUpperCase() + w.slice(1);
+            })
+            .join(" ");
+          dimWrap.appendChild(btn);
         }
       }
 
@@ -397,6 +452,7 @@ const subtitle =
 
       var sevWrap = root.querySelector("[data-severity-buttons]");
       var repoWrap = root.querySelector("[data-repo-buttons]");
+      var dimWrap = root.querySelector("[data-dimension-buttons]");
       if (sevWrap) {
         sevWrap.addEventListener("click", function (e) {
           var t = e.target;
@@ -404,6 +460,16 @@ const subtitle =
           var v = t.getAttribute("data-severity");
           selectedSeverity = v == null ? "" : v;
           setButtonGroup(sevWrap, "data-severity", selectedSeverity);
+          render();
+        });
+      }
+      if (dimWrap) {
+        dimWrap.addEventListener("click", function (e) {
+          var t = e.target;
+          if (t.tagName !== "BUTTON") return;
+          var v = t.getAttribute("data-dimension");
+          selectedDimension = v == null ? "" : v;
+          setButtonGroup(dimWrap, "data-dimension", selectedDimension);
           render();
         });
       }
