@@ -384,9 +384,8 @@ const subtitle =
           for (var i = 0; i < chunk.length; i++) allFindings.push(chunk[i]);
           hasMore = chunk.length === pageSize;
           nextOffset += chunk.length;
-          if (nextOffset <= chunk.length) {
-            buildRepoButtons(allFindings);
-          }
+          buildRepoButtons(allFindings);
+          buildDimensionButtons(allFindings);
         } catch (e) {
           allFindings = [];
           hasMore = false;
