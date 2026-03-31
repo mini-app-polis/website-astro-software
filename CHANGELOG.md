@@ -1,3 +1,10 @@
+## [1.8.6](https://github.com/mini-app-polis/website-astro-software/compare/v1.8.5...v1.8.6) (2026-03-31)
+
+
+### Bug Fixes
+
+* removing details from homepage ([35a9e88](https://github.com/mini-app-polis/website-astro-software/commit/35a9e8875d3cdf058597f059ff4cdefc0d09df1c))
+
 ## [1.8.5](https://github.com/mini-app-polis/website-astro-software/compare/v1.8.4...v1.8.5) (2026-03-31)
 
 
