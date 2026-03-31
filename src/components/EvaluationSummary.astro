@@ -37,24 +37,45 @@
     if (!root) throw new Error("EvaluationSummary root not found");
 
     const listEl = root.querySelector("[data-eval-summary-list]");
-    if (!listEl) throw new Error("EvaluationSummary list not found");
     const countsEl = root.querySelector("[data-eval-counts]");
     const lastEl = root.querySelector("[data-eval-last]");
+    const toggleEl = root.querySelector("[data-eval-toggle]");
+    if (!listEl || !toggleEl) throw new Error("EvaluationSummary elements not found");
 
     const BASE = document.documentElement.dataset.apiUrl || "";
     if (!BASE) {
       root.classList.add("hidden");
     } else {
       const baseUrl = String(BASE).replace(/\/$/, "");
-      const url = `${baseUrl}/v1/evaluations/summary`;
       const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+      let currentView = "repo";
+      let cachedFindings = null;
 
-      function formatDimension(raw) {
-        return String(raw ?? "")
-          .split("_")
-          .filter(Boolean)
-          .map((w) => w[0].toUpperCase() + w.slice(1))
-          .join(" ");
+      // -- Toggle ------------------------------------------------
+      function updateToggle() {
+        toggleEl.querySelectorAll("button[data-view]").forEach((btn) => {
+          const active = btn.getAttribute("data-view") === currentView;
+          btn.className = active
+            ? "rounded-full bg-white/10 px-3 py-1 text-slate-100 transition-colors"
+            : "rounded-full px-3 py-1 text-slate-500 transition-colors hover:text-slate-300";
+        });
+      }
+      updateToggle();
+
+      toggleEl.addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-view]");
+        if (!btn) return;
+        const v = btn.getAttribute("data-view");
+        if (v === currentView) return;
+        currentView = v;
+        updateToggle();
+        if (cachedFindings) render(cachedFindings);
+      });
+
+      // -- Helpers -----------------------------------------------
+      function normalizeSeverity(level) {
+        const s = String(level ?? "INFO").toUpperCase();
+        return s === "WARNING" ? "WARN" : s;
       }
 
       function relativeTime(iso) {
@@ -68,87 +89,154 @@
         if (Math.abs(min) < 60) return rtf.format(min, "minute");
         const hr = Math.round(min / 60);
         if (Math.abs(hr) < 24) return rtf.format(hr, "hour");
-        const day = Math.round(hr / 24);
-        return rtf.format(day, "day");
+        return rtf.format(Math.round(hr / 24), "day");
       }
 
-      function severityTag(label, count, activeClass) {
+      function severityTag(label, count, cls) {
         if (!count || Number(count) <= 0) return "";
-        return `<span class="${activeClass}">${count} ${label}</span>`;
+        return `<span class="${cls}">${count} ${label}</span>`;
       }
 
+      function formatDimension(raw) {
+        return String(raw || "")
+          .split("_")
+          .filter(Boolean)
+          .map((w) => w[0].toUpperCase() + w.slice(1))
+          .join(" ");
+      }
+
+      // -- Aggregate ---------------------------------------------
+      function aggregateByRepo(findings) {
+        const map = new Map();
+        for (const f of findings) {
+          const key = String(f?.repo || f?.repository || "unknown").trim();
+          const sev = normalizeSeverity(f?.severity);
+          const ts = new Date(f?.evaluated_at || f?.created_at || 0).getTime();
+          if (!map.has(key)) map.set(key, { error: 0, warn: 0, info: 0, latestMs: 0 });
+          const e = map.get(key);
+          if (sev === "ERROR") e.error++;
+          else if (sev === "WARN") e.warn++;
+          else e.info++;
+          if (!Number.isNaN(ts) && ts > e.latestMs) e.latestMs = ts;
+        }
+        return [...map.entries()]
+          .sort(([, a], [, b]) => b.error - a.error || b.warn - a.warn)
+          .map(([key, counts]) => ({ label: key, mono: true, ...counts }));
+      }
+
+      function aggregateByDimension(findings) {
+        const map = new Map();
+        for (const f of findings) {
+          const key = String(f?.dimension || "unknown").trim();
+          const sev = normalizeSeverity(f?.severity);
+          const ts = new Date(f?.evaluated_at || f?.created_at || 0).getTime();
+          if (!map.has(key)) map.set(key, { error: 0, warn: 0, info: 0, latestMs: 0 });
+          const e = map.get(key);
+          if (sev === "ERROR") e.error++;
+          else if (sev === "WARN") e.warn++;
+          else e.info++;
+          if (!Number.isNaN(ts) && ts > e.latestMs) e.latestMs = ts;
+        }
+        return [...map.entries()]
+          .sort(([, a], [, b]) => b.error - a.error || b.warn - a.warn)
+          .map(([key, counts]) => ({ label: formatDimension(key), mono: false, ...counts }));
+      }
+
+      // -- Render ------------------------------------------------
+      function render(findings) {
+        const rows = currentView === "repo" ? aggregateByRepo(findings) : aggregateByDimension(findings);
+
+        listEl.innerHTML = "";
+        rows.forEach((item, idx) => {
+          const row = document.createElement("div");
+          row.className =
+            "reveal flex items-center justify-between gap-4 rounded-lg border border-white/5 bg-black/10 px-4 py-3";
+          row.style.setProperty("--d", `${idx * 80}ms`);
+
+          const errTag = severityTag("error", item.error, "text-red-400");
+          const warnTag = severityTag("warn", item.warn, "text-amber-400");
+          const infoTag = severityTag("info", item.info, "text-slate-400");
+          const tags = [errTag, warnTag, infoTag].filter(Boolean).join(" · ");
+
+          row.innerHTML = `
+          <div class="min-w-0">
+            <div class="${item.mono ? "font-mono" : ""} text-sm font-medium text-slate-100">
+              ${item.label}
+            </div>
+            <div class="mt-1 text-sm">
+              ${tags || '<span class="text-slate-500">No findings</span>'}
+            </div>
+          </div>
+          <div class="shrink-0 text-xs text-slate-400">
+            ${relativeTime(new Date(item.latestMs).toISOString())}
+          </div>
+        `;
+          listEl.appendChild(row);
+        });
+      }
+
+      // -- Load - scoped to latest run_id only ------------------
       async function load() {
         try {
-          const res = await fetch(url, { cache: "no-store" });
+          const res = await fetch(`${baseUrl}/v1/evaluations?limit=500`, {
+            cache: "no-store",
+          });
           if (!res.ok) {
             root.classList.add("hidden");
             return;
           }
 
           const json = await res.json();
-          const data = json?.data ?? [];
-          if (!Array.isArray(data)) {
+          const allFindings = json?.data ?? [];
+          if (!Array.isArray(allFindings) || allFindings.length === 0) {
             root.classList.add("hidden");
             return;
           }
 
-          if (data.length === 0) {
-            if (countsEl) countsEl.innerHTML = `<span class="text-slate-500">0 error · 0 warn · 0 info</span>`;
-            if (lastEl) lastEl.textContent = "No evaluations yet";
-            listEl.innerHTML = `
-              <p class="py-3 text-sm text-slate-400">No evaluations recorded yet.</p>
-            `;
-            return;
+          // Find the most recent run_id
+          let latestMs = 0;
+          let latestRunId = null;
+          for (const f of allFindings) {
+            const ts = new Date(f?.evaluated_at || f?.created_at || 0).getTime();
+            if (!Number.isNaN(ts) && ts > latestMs) {
+              latestMs = ts;
+              latestRunId = f?.run_id ?? null;
+            }
           }
 
-          const totals = data.reduce(
-            (acc, item) => {
-              acc.error += Number(item?.error_count || 0);
-              acc.warn += Number(item?.warn_count || 0);
-              acc.info += Number(item?.info_count || 0);
-              const t = new Date(item?.most_recent ?? 0).getTime();
-              if (!Number.isNaN(t) && t > acc.latestMs) acc.latestMs = t;
-              return acc;
-            },
-            { error: 0, warn: 0, info: 0, latestMs: 0 },
-          );
+          // Scope to latest run only
+          const findings = latestRunId
+            ? allFindings.filter((f) => f?.run_id === latestRunId)
+            : allFindings;
+
+          cachedFindings = findings;
+
+          // Global totals from latest run
+          let totalError = 0;
+          let totalWarn = 0;
+          let totalInfo = 0;
+          for (const f of findings) {
+            const sev = normalizeSeverity(f?.severity);
+            if (sev === "ERROR") totalError++;
+            else if (sev === "WARN") totalWarn++;
+            else totalInfo++;
+          }
 
           if (lastEl) {
-            lastEl.textContent =
-              totals.latestMs > 0 ? relativeTime(new Date(totals.latestMs).toISOString()) : "—";
+            lastEl.textContent = latestMs > 0 ? relativeTime(new Date(latestMs).toISOString()) : "—";
           }
-
           if (countsEl) {
-            const err = `<a href="#finding-error-first" class="text-red-400 hover:underline">${totals.error} error</a>`;
-            const warn = `<a href="#finding-warn-first" class="text-amber-400 hover:underline">${totals.warn} warn</a>`;
-            const info = `<span class="text-slate-400">${totals.info} info</span>`;
-            countsEl.innerHTML = `${err} <span class="text-slate-500">·</span> ${warn} <span class="text-slate-500">·</span> ${info}`;
+            countsEl.innerHTML = [
+              `<a href="#finding-error-first" class="text-red-400 hover:underline">${totalError} error</a>`,
+              `<span class="text-slate-500">·</span>`,
+              `<a href="#finding-warn-first" class="text-amber-400 hover:underline">${totalWarn} warn</a>`,
+              `<span class="text-slate-500">·</span>`,
+              `<span class="text-slate-400">${totalInfo} info</span>`,
+            ].join(" ");
           }
 
-          listEl.innerHTML = "";
-          data.forEach((item, idx) => {
-            const row = document.createElement("div");
-            row.className =
-              "reveal flex items-center justify-between gap-4 rounded-lg border border-white/5 bg-black/10 px-4 py-3";
-            row.style.setProperty("--d", `${idx * 100}ms`);
-
-            const dimension = formatDimension(item?.dimension);
-            const errorTag = severityTag("error", item?.error_count, "text-red-400");
-            const warnTag = severityTag("warn", item?.warn_count, "text-amber-400");
-            const infoTag = severityTag("info", item?.info_count, "text-slate-400");
-            const tags = [errorTag, warnTag, infoTag].filter(Boolean).join(" · ");
-
-            row.innerHTML = `
-              <div class="min-w-0">
-                <div class="font-medium text-slate-100">${dimension || "Unknown"}</div>
-                <div class="mt-1 text-sm">${tags || '<span class="text-slate-500">No findings</span>'}</div>
-              </div>
-              <div class="shrink-0 text-xs text-slate-400">${relativeTime(item?.most_recent)}</div>
-            `;
-            listEl.appendChild(row);
-          });
+          render(findings);
         } catch {
-          // Fail silently by hiding the whole section.
           root.classList.add("hidden");
         }
       }
