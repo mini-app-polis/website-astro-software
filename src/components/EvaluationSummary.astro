@@ -178,7 +178,7 @@
       // -- Load - scoped to latest run_id only ------------------
       async function load() {
         try {
-          const res = await fetch(`${baseUrl}/v1/evaluations?limit=500`, {
+          const res = await fetch(`${baseUrl}/v1/evaluations?limit=200`, {
             cache: "no-store",
           });
           if (!res.ok) {
