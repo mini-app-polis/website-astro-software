@@ -1,3 +1,10 @@
+## [1.8.10](https://github.com/mini-app-polis/website-astro-software/compare/v1.8.9...v1.8.10) (2026-04-01)
+
+
+### Bug Fixes
+
+* refresh lockfile for js-yaml imports ([da61f2a](https://github.com/mini-app-polis/website-astro-software/commit/da61f2aadfac390d6db8ca124b1ab1ae9a8e65a7))
+
 ## [1.8.9](https://github.com/mini-app-polis/website-astro-software/compare/v1.8.8...v1.8.9) (2026-04-01)
 
 
