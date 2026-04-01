@@ -1,7 +1,6 @@
 ---
 import Base from "../layouts/Base.astro";
 import EvaluationSummary from "../components/EvaluationSummary.astro";
-import FeatureFlags from "../components/FeatureFlags.astro";
 ---
 
 <Base title="Kaiano Levine — Software Engineer">
@@ -46,7 +45,7 @@ import FeatureFlags from "../components/FeatureFlags.astro";
 
       <!-- Standards -->
       <a
-        href="/ecosystem#standards"
+        href="/standards"
         class="group flex flex-col justify-between rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5 transition-colors hover:border-emerald-500/40"
       >
         <div class="space-y-2">
@@ -101,8 +100,13 @@ import FeatureFlags from "../components/FeatureFlags.astro";
         </p>
       </div>
       <EvaluationSummary />
-      <FeatureFlags />
-      <div class="flex justify-end">
+      <div class="flex items-center justify-between">
+        <a
+          href="/flags"
+          class="inline-flex items-center gap-2 font-mono text-sm text-slate-400 transition-colors hover:text-slate-100"
+        >
+          Feature flags ↗
+        </a>
         <a
           href="/pipeline"
           class="inline-flex items-center gap-2 font-mono text-sm text-slate-400 transition-colors hover:text-slate-100"
