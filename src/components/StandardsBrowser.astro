@@ -29,6 +29,7 @@ interface Rule {
 interface DomainFile {
   domain: string;
   standards: Rule[];
+  rules?: Rule[];
 }
 
 // Friendly display names for domain file keys
@@ -103,7 +104,11 @@ try {
 
         try {
           const data = await parseYamlText<DomainFile>(yamlText);
-          const rules = Array.isArray(data?.standards) ? data.standards : [];
+          const rules = Array.isArray(data?.standards)
+            ? data.standards
+            : Array.isArray(data?.rules)
+              ? data.rules
+              : [];
           return { key, rules };
         } catch (error) {
           console.error(`Failed to parse ${path} from ${RAW_BASE}`, error);
@@ -117,7 +122,7 @@ try {
       const label = DOMAIN_LABELS[result.key] ?? result.key;
       domainFiles.push({ label, key: result.key, rules: result.rules });
       totalRules += result.rules.length;
-      checkableRules += result.rules.filter((r) => r.checkable).length;
+      checkableRules += result.rules.filter((r) => r.checkable === true).length;
     }
   } else {
     fetchError = true;
