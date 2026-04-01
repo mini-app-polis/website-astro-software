@@ -8,9 +8,9 @@
  *
  * All fetches are build-time (SSG). No client-side API calls.
  */
-import { load as parseYaml } from "js-yaml";
-
-const BASE_URL =
+const GITHUB_API =
+  "https://api.github.com/repos/mini-app-polis/ecosystem-standards/contents";
+const RAW_BASE =
   "https://raw.githubusercontent.com/mini-app-polis/ecosystem-standards/main";
 
 // Rule shape from the standards YAML files
@@ -31,11 +31,6 @@ interface DomainFile {
   standards: Rule[];
 }
 
-interface IndexFile {
-  version: string;
-  files: string[];
-}
-
 // Friendly display names for domain file keys
 const DOMAIN_LABELS: Record<string, string> = {
   principles: "Principles",
@@ -50,17 +45,37 @@ const DOMAIN_LABELS: Record<string, string> = {
   "cross-stack": "Cross-Stack",
 };
 
-async function safeFetch(url: string): Promise<string | null> {
+interface GitHubContentResponse {
+  content?: string;
+  encoding?: string;
+}
+
+let yamlLoad: ((input: string) => unknown) | null = null;
+
+async function parseYamlText<T>(yamlText: string): Promise<T> {
+  if (!yamlLoad) {
+    const yamlModule = await import("js-yaml");
+    yamlLoad = yamlModule.load as (input: string) => unknown;
+  }
+  return yamlLoad(yamlText) as T;
+}
+
+async function fetchYamlText(path: string): Promise<string | null> {
   try {
-    const res = await fetch(url);
+    const res = await fetch(`${GITHUB_API}/${path}`);
     if (!res.ok) return null;
-    return await res.text();
+
+    const payload = (await res.json()) as GitHubContentResponse;
+    if (payload.encoding !== "base64" || !payload.content) return null;
+
+    const normalizedBase64 = payload.content.replace(/\n/g, "");
+    return Buffer.from(normalizedBase64, "base64").toString("utf-8");
   } catch {
     return null;
   }
 }
 
-// Fetch index to get version + file list
+// Fetch index + domain files at build time
 let version = "unknown";
 let domainFiles: { label: string; key: string; rules: Rule[] }[] = [];
 let totalRules = 0;
@@ -68,25 +83,30 @@ let checkableRules = 0;
 let fetchError = false;
 
 try {
-  const indexText = await safeFetch(`${BASE_URL}/index.yaml`);
+  const indexText = await fetchYamlText("index.yaml");
   if (indexText) {
-    const index = parseYaml(indexText) as IndexFile;
-    version = String(index.version ?? "unknown");
+    const versionMatch = indexText.match(/^version:\s*([^\n]+)$/m);
+    version = versionMatch?.[1]?.trim() ?? "unknown";
 
-    // Fetch all domain files in parallel
-    const domainKeys = (index.files ?? []).filter(
-      (f: string) => f !== "definitions-of-done.yaml" && f !== "ecosystem.yaml",
-    );
+    const domainPaths = [...indexText.matchAll(/^\s*-\s+(standards\/[\w-]+\.yaml)\s*$/gm)]
+      .map((match) => match[1])
+      .filter(
+        (path) =>
+          path !== "standards/definitions-of-done.yaml" && path !== "standards/ecosystem.yaml",
+      );
 
     const fetched = await Promise.all(
-      domainKeys.map(async (filename: string) => {
-        const key = filename.replace(".yaml", "");
-        const text = await safeFetch(`${BASE_URL}/standards/${filename}`);
-        if (!text) return null;
+      domainPaths.map(async (path: string) => {
+        const key = path.replace(/^standards\//, "").replace(".yaml", "");
+        const yamlText = await fetchYamlText(path);
+        if (!yamlText) return null;
+
         try {
-          const data = parseYaml(text) as DomainFile;
-          return { key, rules: data.standards ?? [] };
-        } catch {
+          const data = await parseYamlText<DomainFile>(yamlText);
+          const rules = Array.isArray(data?.standards) ? data.standards : [];
+          return { key, rules };
+        } catch (error) {
+          console.error(`Failed to parse ${path} from ${RAW_BASE}`, error);
           return null;
         }
       }),
