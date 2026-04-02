@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.8.16...v1.9.0) (2026-04-02)
+
+
+### Features
+
+* adding og image ([50c314f](https://github.com/mini-app-polis/website-astro-software/commit/50c314f0b18467fc463793c5d5bcd2db5273f183))
+
 ## [1.8.16](https://github.com/mini-app-polis/website-astro-software/compare/v1.8.15...v1.8.16) (2026-04-01)
 
 
