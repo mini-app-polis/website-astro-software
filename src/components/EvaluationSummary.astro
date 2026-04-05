@@ -208,21 +208,34 @@
             return;
           }
 
-          // Find the most recent run_id
-          let latestMs = 0;
-          let latestRunId = null;
+          // Find the latest run_id per source type so all pipeline types are represented
+          const latestBySource = new Map();
           for (const f of allFindings) {
+            const source = String(f?.source || "unknown");
             const ts = new Date(f?.evaluated_at || f?.created_at || 0).getTime();
-            if (!Number.isNaN(ts) && ts > latestMs) {
-              latestMs = ts;
-              latestRunId = f?.run_id ?? null;
+            if (!Number.isNaN(ts)) {
+              const existing = latestBySource.get(source);
+              if (!existing || ts > existing.ts) {
+                latestBySource.set(source, { ts, runId: f?.run_id ?? null });
+              }
             }
           }
 
-          // Scope to latest run only
-          const findings = latestRunId
-            ? allFindings.filter((f) => f?.run_id === latestRunId)
+          // Collect the latest run_id for each source
+          const latestRunIds = new Set(
+            [...latestBySource.values()].map((v) => v.runId).filter(Boolean)
+          );
+
+          // Scope to findings from the latest run of each source type
+          const findings = latestRunIds.size > 0
+            ? allFindings.filter((f) => latestRunIds.has(f?.run_id ?? null))
             : allFindings;
+
+          // Most recent timestamp across all sources for "Last evaluated"
+          let latestMs = 0;
+          for (const { ts } of latestBySource.values()) {
+            if (ts > latestMs) latestMs = ts;
+          }
 
           cachedFindings = findings;
 
