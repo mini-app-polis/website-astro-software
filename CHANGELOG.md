@@ -1,3 +1,10 @@
+## [1.9.3](https://github.com/mini-app-polis/website-astro-software/compare/v1.9.2...v1.9.3) (2026-04-05)
+
+
+### Bug Fixes
+
+* 2 hardcoded strings, and repo filter on pipeline ([01ea3a4](https://github.com/mini-app-polis/website-astro-software/commit/01ea3a4c13a30cce456176e24143b77cbb18b7ac))
+
 ## [1.9.2](https://github.com/mini-app-polis/website-astro-software/compare/v1.9.1...v1.9.2) (2026-04-05)
 
 
