@@ -43,8 +43,8 @@
     ))}
   </div>
 
-  <p class="mt-4 text-xs text-slate-500">
-    Evaluated by Claude · Standards v6.0
+  <p class="mt-4 text-xs text-slate-500" data-eval-footer>
+    Evaluated by Claude · <span data-eval-standards-version>Standards v—</span>
   </p>
 
   <script type="module">
@@ -238,6 +238,13 @@
           }
 
           cachedFindings = findings;
+
+          // Update footer with live standards version from findings
+          const footerVersionEl = root.querySelector("[data-eval-standards-version]");
+          if (footerVersionEl) {
+            const sv = findings.find(f => f?.standards_version)?.standards_version;
+            if (sv) footerVersionEl.textContent = `Standards v${sv}`;
+          }
 
           // Global totals from latest run
           let totalError = 0;

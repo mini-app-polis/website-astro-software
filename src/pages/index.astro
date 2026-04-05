@@ -1,6 +1,16 @@
 ---
 import Base from "../layouts/Base.astro";
 import EvaluationSummary from "../components/EvaluationSummary.astro";
+
+let standardsVersion = "—";
+try {
+  const res = await fetch("https://raw.githubusercontent.com/mini-app-polis/ecosystem-standards/main/index.yaml");
+  if (res.ok) {
+    const text = await res.text();
+    const match = text.match(/^version:\s*(.+)$/m);
+    if (match) standardsVersion = match[1].trim();
+  }
+} catch {}
 ---
 
 <Base title="Kaiano Levine — Software Engineer">
@@ -54,7 +64,7 @@ import EvaluationSummary from "../components/EvaluationSummary.astro";
               Engineering Standards
             </span>
             <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-xs text-slate-400">
-              v1.6.0
+              v{standardsVersion}
             </span>
           </div>
           <p class="text-sm leading-relaxed text-slate-400">
