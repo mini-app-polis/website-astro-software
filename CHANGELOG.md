@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.10.0...v1.11.0) (2026-04-09)
+
+
+### Features
+
+* break EvaluationSummary down by run type with per-bucket counts ([56269d7](https://github.com/mini-app-polis/website-astro-software/commit/56269d7bf7249bb5f5b66002c1dc771f6f0535a4))
+
 # [1.10.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.9.4...v1.10.0) (2026-04-09)
 
 
