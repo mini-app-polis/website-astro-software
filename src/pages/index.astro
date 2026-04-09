@@ -2,15 +2,7 @@
 import Base from "../layouts/Base.astro";
 import EvaluationSummary from "../components/EvaluationSummary.astro";
 
-let standardsVersion = "—";
-try {
-  const res = await fetch("https://raw.githubusercontent.com/mini-app-polis/ecosystem-standards/main/index.yaml");
-  if (res.ok) {
-    const text = await res.text();
-    const match = text.match(/^version:\s*(.+)$/m);
-    if (match) standardsVersion = match[1].trim();
-  }
-} catch {}
+// Standards version is hydrated client-side from the evaluations API.
 ---
 
 <Base title="Kaiano Levine — Software Engineer">
@@ -63,8 +55,11 @@ try {
             <span class="font-display text-base tracking-tight text-slate-100">
               Engineering Standards
             </span>
-            <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-xs text-slate-400">
-              v{standardsVersion}
+            <span
+              class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-xs text-slate-400"
+              data-standards-version-badge
+            >
+              v—
             </span>
           </div>
           <p class="text-sm leading-relaxed text-slate-400">
@@ -148,5 +143,21 @@ try {
       </div>
     </div>
   </section>
+  <script is:inline>
+    (function () {
+      var badge = document.querySelector("[data-standards-version-badge]");
+      if (!badge) return;
+      var base = (document.documentElement.dataset.apiUrl || "").replace(/\/$/, "");
+      if (!base) return;
+      fetch(base + "/v1/evaluations?limit=1", { cache: "no-store" })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (json) {
+          var findings = (json && json.data) || [];
+          var sv = findings.length > 0 ? findings[0].standards_version : null;
+          if (sv) badge.textContent = "v" + sv;
+        })
+        .catch(function () {});
+    })();
+  </script>
 </Base>
 
