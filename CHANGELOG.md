@@ -1,3 +1,15 @@
+# [1.10.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.9.4...v1.10.0) (2026-04-09)
+
+
+### Bug Fixes
+
+* hydrate standards version badge client-side from evaluations API ([7bf2ab1](https://github.com/mini-app-polis/website-astro-software/commit/7bf2ab1944c75dbdfee41a16a0d83f27d7ae4f11))
+
+
+### Features
+
+* add run type filter to pipeline findings browser ([43b9de1](https://github.com/mini-app-polis/website-astro-software/commit/43b9de124c496188e51e0577f9fd8127602eb6fa))
+
 ## [1.9.4](https://github.com/mini-app-polis/website-astro-software/compare/v1.9.3...v1.9.4) (2026-04-05)
 
 
