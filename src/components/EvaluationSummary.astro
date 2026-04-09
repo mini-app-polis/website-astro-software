@@ -25,13 +25,22 @@
     </div>
   </div>
 
-  <div class="mt-3 rounded-lg border border-white/10 bg-black/10 px-4 py-3">
-    <div class="text-xs uppercase tracking-wider text-slate-500">Last evaluated</div>
-    <div class="mt-1 text-sm font-medium text-slate-200" data-eval-last>—</div>
-  </div>
-
-  <div class="mt-4 flex flex-wrap items-center gap-3 text-sm" data-eval-counts>
-    <span class="text-slate-500">Loading counts…</span>
+  <!-- Run type selector — one card per source bucket -->
+  <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3" data-eval-source-tabs>
+    {["Deterministic", "LLM Conformance", "Pipeline Eval"].map((label) => (
+      <button
+        type="button"
+        class="rounded-lg border border-white/5 bg-black/10 px-4 py-3 text-left transition-colors hover:border-white/10"
+        data-source-tab
+        data-source-label={label}
+        data-selected="false"
+        aria-pressed="false"
+      >
+        <div class="text-xs font-mono font-medium text-slate-300" data-tab-label>{label}</div>
+        <div class="mt-1 text-xs text-slate-500" data-tab-counts>—</div>
+        <div class="mt-1 text-xs text-slate-600" data-tab-time>—</div>
+      </button>
+    ))}
   </div>
 
   <div class="mt-5 space-y-3" data-eval-summary-list>
@@ -52,10 +61,9 @@
     if (!root) throw new Error("EvaluationSummary root not found");
 
     const listEl = root.querySelector("[data-eval-summary-list]");
-    const countsEl = root.querySelector("[data-eval-counts]");
-    const lastEl = root.querySelector("[data-eval-last]");
     const toggleEl = root.querySelector("[data-eval-toggle]");
-    if (!listEl || !toggleEl) throw new Error("EvaluationSummary elements not found");
+    const sourceTabsEl = root.querySelector("[data-eval-source-tabs]");
+    if (!listEl || !toggleEl || !sourceTabsEl) throw new Error("EvaluationSummary elements not found");
 
     const BASE = document.documentElement.dataset.apiUrl || "";
     if (!BASE) {
@@ -63,29 +71,27 @@
     } else {
       const baseUrl = String(BASE).replace(/\/$/, "");
       const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+
       let currentView = "repo";
-      let cachedFindings = null;
+      // selectedSource is one of "deterministic", "llm", "pipeline"
+      let selectedSource = "deterministic";
+      // findingsByBucket: keyed by bucket name, value is array of findings
+      let findingsByBucket = { deterministic: [], llm: [], pipeline: [] };
 
-      // -- Toggle ------------------------------------------------
-      function updateToggle() {
-        toggleEl.querySelectorAll("button[data-view]").forEach((btn) => {
-          const active = btn.getAttribute("data-view") === currentView;
-          btn.className = active
-            ? "rounded-full bg-white/10 px-3 py-1 text-slate-100 transition-colors"
-            : "rounded-full px-3 py-1 text-slate-500 transition-colors hover:text-slate-300";
-        });
+      // Source value -> bucket name
+      function sourceToBucket(source) {
+        const s = String(source || "");
+        if (s === "conformance_deterministic") return "deterministic";
+        if (s === "conformance_check") return "llm";
+        return "pipeline";
       }
-      updateToggle();
 
-      toggleEl.addEventListener("click", (e) => {
-        const btn = e.target.closest("button[data-view]");
-        if (!btn) return;
-        const v = btn.getAttribute("data-view");
-        if (v === currentView) return;
-        currentView = v;
-        updateToggle();
-        if (cachedFindings) render(cachedFindings);
-      });
+      // Bucket name -> display label
+      const BUCKET_LABELS = {
+        deterministic: "Deterministic",
+        llm: "LLM Conformance",
+        pipeline: "Pipeline Eval",
+      };
 
       // -- Helpers -----------------------------------------------
       function normalizeSeverity(level) {
@@ -107,9 +113,32 @@
         return rtf.format(Math.round(hr / 24), "day");
       }
 
-      function severityTag(label, count, cls) {
-        if (!count || Number(count) <= 0) return "";
-        return `<span class="${cls}">${count} ${label}</span>`;
+      function countSeverities(findings) {
+        let error = 0, warn = 0, info = 0;
+        for (const f of findings) {
+          const sev = normalizeSeverity(f?.severity);
+          if (sev === "ERROR") error++;
+          else if (sev === "WARN") warn++;
+          else info++;
+        }
+        return { error, warn, info };
+      }
+
+      function formatCounts({ error, warn, info }) {
+        const parts = [];
+        if (error > 0) parts.push(`<span class="text-red-400">${error} error</span>`);
+        if (warn > 0) parts.push(`<span class="text-amber-400">${warn} warn</span>`);
+        if (info > 0) parts.push(`<span class="text-slate-400">${info} info</span>`);
+        return parts.join('<span class="text-slate-600"> · </span>') || '<span class="text-slate-500">No findings</span>';
+      }
+
+      function latestTs(findings) {
+        let max = 0;
+        for (const f of findings) {
+          const t = new Date(f?.evaluated_at || f?.created_at || 0).getTime();
+          if (!Number.isNaN(t) && t > max) max = t;
+        }
+        return max;
       }
 
       function formatDimension(raw) {
@@ -120,7 +149,76 @@
           .join(" ");
       }
 
-      // -- Aggregate ---------------------------------------------
+      // -- Toggle (By Repo / By Dimension) -----------------------
+      function updateToggle() {
+        toggleEl.querySelectorAll("button[data-view]").forEach((btn) => {
+          const active = btn.getAttribute("data-view") === currentView;
+          btn.className = active
+            ? "rounded-full bg-white/10 px-3 py-1 text-slate-100 transition-colors"
+            : "rounded-full px-3 py-1 text-slate-500 transition-colors hover:text-slate-300";
+        });
+      }
+      updateToggle();
+
+      toggleEl.addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-view]");
+        if (!btn) return;
+        const v = btn.getAttribute("data-view");
+        if (v === currentView) return;
+        currentView = v;
+        updateToggle();
+        renderList();
+      });
+
+      // -- Source tabs -------------------------------------------
+      function updateSourceTabs() {
+        sourceTabsEl.querySelectorAll("[data-source-tab]").forEach((tab) => {
+          const label = tab.getAttribute("data-source-label");
+          const bucket = Object.keys(BUCKET_LABELS).find(
+            (k) => BUCKET_LABELS[k] === label
+          );
+          const active = bucket === selectedSource;
+          tab.setAttribute("data-selected", active ? "true" : "false");
+          tab.setAttribute("aria-pressed", active ? "true" : "false");
+          tab.className = active
+            ? "rounded-lg border border-accent/40 bg-accent/10 px-4 py-3 text-left transition-colors"
+            : "rounded-lg border border-white/5 bg-black/10 px-4 py-3 text-left transition-colors hover:border-white/10";
+        });
+      }
+
+      function populateSourceTabs() {
+        sourceTabsEl.querySelectorAll("[data-source-tab]").forEach((tab) => {
+          const label = tab.getAttribute("data-source-label");
+          const bucket = Object.keys(BUCKET_LABELS).find(
+            (k) => BUCKET_LABELS[k] === label
+          );
+          if (!bucket) return;
+          const findings = findingsByBucket[bucket] || [];
+          const counts = countSeverities(findings);
+          const ts = latestTs(findings);
+
+          const countsEl = tab.querySelector("[data-tab-counts]");
+          const timeEl = tab.querySelector("[data-tab-time]");
+          if (countsEl) countsEl.innerHTML = formatCounts(counts);
+          if (timeEl) timeEl.textContent = ts > 0 ? relativeTime(new Date(ts).toISOString()) : "—";
+        });
+        updateSourceTabs();
+      }
+
+      sourceTabsEl.addEventListener("click", (e) => {
+        const tab = e.target.closest("[data-source-tab]");
+        if (!tab) return;
+        const label = tab.getAttribute("data-source-label");
+        const bucket = Object.keys(BUCKET_LABELS).find(
+          (k) => BUCKET_LABELS[k] === label
+        );
+        if (!bucket || bucket === selectedSource) return;
+        selectedSource = bucket;
+        updateSourceTabs();
+        renderList();
+      });
+
+      // -- List (By Repo / By Dimension) -------------------------
       function aggregateByRepo(findings) {
         const map = new Map();
         for (const f of findings) {
@@ -157,40 +255,51 @@
           .map(([key, counts]) => ({ label: formatDimension(key), mono: false, ...counts }));
       }
 
-      // -- Render ------------------------------------------------
-      function render(findings) {
-        const rows = currentView === "repo" ? aggregateByRepo(findings) : aggregateByDimension(findings);
+      function renderList() {
+        const findings = findingsByBucket[selectedSource] || [];
+        const rows = currentView === "repo"
+          ? aggregateByRepo(findings)
+          : aggregateByDimension(findings);
 
         listEl.innerHTML = "";
+
+        if (findings.length === 0) {
+          const empty = document.createElement("p");
+          empty.className = "text-sm text-slate-500";
+          empty.textContent = "No findings for this run type.";
+          listEl.appendChild(empty);
+          return;
+        }
+
         rows.forEach((item, idx) => {
           const row = document.createElement("div");
           row.className =
             "reveal flex items-center justify-between gap-4 rounded-lg border border-white/5 bg-black/10 px-4 py-3";
           row.style.setProperty("--d", `${idx * 80}ms`);
 
-          const errTag = severityTag("error", item.error, "text-red-400");
-          const warnTag = severityTag("warn", item.warn, "text-amber-400");
-          const infoTag = severityTag("info", item.info, "text-slate-400");
+          const errTag = item.error > 0 ? `<span class="text-red-400">${item.error} error</span>` : "";
+          const warnTag = item.warn > 0 ? `<span class="text-amber-400">${item.warn} warn</span>` : "";
+          const infoTag = item.info > 0 ? `<span class="text-slate-400">${item.info} info</span>` : "";
           const tags = [errTag, warnTag, infoTag].filter(Boolean).join(" · ");
 
           row.innerHTML = `
-          <div class="min-w-0">
-            <div class="${item.mono ? "font-mono" : ""} text-sm font-medium text-slate-100">
-              ${item.label}
+            <div class="min-w-0">
+              <div class="${item.mono ? "font-mono" : ""} text-sm font-medium text-slate-100">
+                ${item.label}
+              </div>
+              <div class="mt-1 text-sm">
+                ${tags || '<span class="text-slate-500">No findings</span>'}
+              </div>
             </div>
-            <div class="mt-1 text-sm">
-              ${tags || '<span class="text-slate-500">No findings</span>'}
+            <div class="shrink-0 text-xs text-slate-400">
+              ${relativeTime(new Date(item.latestMs).toISOString())}
             </div>
-          </div>
-          <div class="shrink-0 text-xs text-slate-400">
-            ${relativeTime(new Date(item.latestMs).toISOString())}
-          </div>
-        `;
+          `;
           listEl.appendChild(row);
         });
       }
 
-      // -- Load - scoped to latest run_id only ------------------
+      // -- Load --------------------------------------------------
       async function load() {
         try {
           const res = await fetch(`${baseUrl}/v1/evaluations?limit=200`, {
@@ -208,7 +317,7 @@
             return;
           }
 
-          // Find the latest run_id per source type so all pipeline types are represented
+          // Find the latest run_id per source type
           const latestBySource = new Map();
           for (const f of allFindings) {
             const source = String(f?.source || "unknown");
@@ -221,56 +330,30 @@
             }
           }
 
-          // Collect the latest run_id for each source
+          // Scope to latest run per source
           const latestRunIds = new Set(
             [...latestBySource.values()].map((v) => v.runId).filter(Boolean)
           );
-
-          // Scope to findings from the latest run of each source type
           const findings = latestRunIds.size > 0
             ? allFindings.filter((f) => latestRunIds.has(f?.run_id ?? null))
             : allFindings;
 
-          // Most recent timestamp across all sources for "Last evaluated"
-          let latestMs = 0;
-          for (const { ts } of latestBySource.values()) {
-            if (ts > latestMs) latestMs = ts;
+          // Split into buckets
+          findingsByBucket = { deterministic: [], llm: [], pipeline: [] };
+          for (const f of findings) {
+            const bucket = sourceToBucket(f?.source);
+            findingsByBucket[bucket].push(f);
           }
 
-          cachedFindings = findings;
-
-          // Update footer with live standards version from findings
+          // Standards version footer
           const footerVersionEl = root.querySelector("[data-eval-standards-version]");
           if (footerVersionEl) {
-            const sv = findings.find(f => f?.standards_version)?.standards_version;
+            const sv = findings.find((f) => f?.standards_version)?.standards_version;
             if (sv) footerVersionEl.textContent = `Standards v${sv}`;
           }
 
-          // Global totals from latest run
-          let totalError = 0;
-          let totalWarn = 0;
-          let totalInfo = 0;
-          for (const f of findings) {
-            const sev = normalizeSeverity(f?.severity);
-            if (sev === "ERROR") totalError++;
-            else if (sev === "WARN") totalWarn++;
-            else totalInfo++;
-          }
-
-          if (lastEl) {
-            lastEl.textContent = latestMs > 0 ? relativeTime(new Date(latestMs).toISOString()) : "—";
-          }
-          if (countsEl) {
-            countsEl.innerHTML = [
-              `<a href="#finding-error-first" class="text-red-400 hover:underline">${totalError} error</a>`,
-              `<span class="text-slate-500">·</span>`,
-              `<a href="#finding-warn-first" class="text-amber-400 hover:underline">${totalWarn} warn</a>`,
-              `<span class="text-slate-500">·</span>`,
-              `<span class="text-slate-400">${totalInfo} info</span>`,
-            ].join(" ");
-          }
-
-          render(findings);
+          populateSourceTabs();
+          renderList();
         } catch {
           root.classList.add("hidden");
         }
@@ -280,4 +363,3 @@
     }
   </script>
 </section>
-
