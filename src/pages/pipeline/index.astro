@@ -91,6 +91,47 @@ const subtitle =
             </button>
           </div>
         </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-mono text-slate-500">Run Type</span>
+          <div class="flex flex-wrap items-center gap-2" data-source-buttons>
+            <button
+              type="button"
+              data-source=""
+              data-selected="true"
+              aria-pressed="true"
+              class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent"
+            >
+              All
+            </button>
+            <button
+              type="button"
+              data-source="conformance_deterministic"
+              data-selected="false"
+              aria-pressed="false"
+              class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent"
+            >
+              Deterministic
+            </button>
+            <button
+              type="button"
+              data-source="conformance_check"
+              data-selected="false"
+              aria-pressed="false"
+              class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent"
+            >
+              LLM Conformance
+            </button>
+            <button
+              type="button"
+              data-source="flow_inline"
+              data-selected="false"
+              aria-pressed="false"
+              class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent"
+            >
+              Pipeline Eval
+            </button>
+          </div>
+        </div>
       </div>
 
       <p
@@ -132,6 +173,7 @@ const subtitle =
       var selectedSeverity = "";
       var selectedRepo = "";
       var selectedDimension = "";
+      var selectedSource = "";
 
       var dateFmt = new Intl.DateTimeFormat("en-US", {
         month: "short",
@@ -197,6 +239,9 @@ const subtitle =
           }
           if (selectedDimension) {
             if (findingDimension(f) !== selectedDimension) return false;
+          }
+          if (selectedSource) {
+            if (String(f.source || "").trim() !== selectedSource) return false;
           }
           return true;
         });
@@ -453,6 +498,7 @@ const subtitle =
       var sevWrap = root.querySelector("[data-severity-buttons]");
       var repoWrap = root.querySelector("[data-repo-buttons]");
       var dimWrap = root.querySelector("[data-dimension-buttons]");
+      var sourceWrap = root.querySelector("[data-source-buttons]");
       if (sevWrap) {
         sevWrap.addEventListener("click", function (e) {
           var t = e.target;
@@ -470,6 +516,16 @@ const subtitle =
           var v = t.getAttribute("data-dimension");
           selectedDimension = v == null ? "" : v;
           setButtonGroup(dimWrap, "data-dimension", selectedDimension);
+          render();
+        });
+      }
+      if (sourceWrap) {
+        sourceWrap.addEventListener("click", function (e) {
+          var t = e.target;
+          if (t.tagName !== "BUTTON") return;
+          var v = t.getAttribute("data-source");
+          selectedSource = v == null ? "" : v;
+          setButtonGroup(sourceWrap, "data-source", selectedSource);
           render();
         });
       }
