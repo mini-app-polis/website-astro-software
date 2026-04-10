@@ -390,10 +390,6 @@ const subtitle =
             var flowName = String(f.flow_name || "").trim();
             var ft = findingText(f);
             var sug = suggestionText(f);
-            var rowIso = evaluatedAt(f);
-            var rowD = rowIso ? new Date(rowIso) : null;
-            var rowOk = rowD && !Number.isNaN(rowD.getTime());
-            var rowTimeOnly = rowOk ? timeFmt.format(rowD) : "—";
             var ridShort =
               String(f.run_id != null ? f.run_id : "")
                 .slice(0, 8) || "—";
@@ -441,10 +437,6 @@ const subtitle =
               escapeHtml(String(f.run_id != null ? f.run_id : "")) +
               '">' +
               escapeHtml(ridShort) +
-              "</span>";
-            html +=
-              '<span class="font-mono text-slate-500 ml-auto">' +
-              escapeHtml(rowTimeOnly) +
               "</span>";
             html += "</div></article>";
           }
