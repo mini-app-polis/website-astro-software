@@ -406,6 +406,13 @@ const subtitle =
               escapeHtml(sev) +
               "</span>";
             html += '<div class="min-w-0 flex-1 space-y-2">';
+            var violationId = String(f.violation_id || "").trim();
+            if (violationId) {
+              html +=
+                '<div class="font-mono text-xs text-slate-500">' +
+                escapeHtml(violationId) +
+                "</div>";
+            }
             html +=
               '<div class="text-sm font-medium text-slate-200">' + escapeHtml(dim) + "</div>";
             if (flowName) {
@@ -415,10 +422,6 @@ const subtitle =
                 "</div>";
             }
             html += '<p class="text-sm leading-relaxed text-slate-300">' + escapeHtml(ft) + "</p>";
-            html +=
-              '<div class="mt-1 font-mono text-xs text-slate-500">' +
-              escapeHtml(rowTimeOnly) +
-              "</div>";
             if (sug) {
               html +=
                 '<p class="text-xs leading-relaxed text-slate-400">' + escapeHtml(sug) + "</p>";
@@ -438,6 +441,10 @@ const subtitle =
               escapeHtml(String(f.run_id != null ? f.run_id : "")) +
               '">' +
               escapeHtml(ridShort) +
+              "</span>";
+            html +=
+              '<span class="font-mono text-slate-500 ml-auto">' +
+              escapeHtml(rowTimeOnly) +
               "</span>";
             html += "</div></article>";
           }
