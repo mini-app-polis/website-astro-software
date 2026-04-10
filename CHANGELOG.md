@@ -1,3 +1,10 @@
+# [1.13.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.12.1...v1.13.0) (2026-04-10)
+
+
+### Features
+
+* **pipeline:** render violation_id as severity-colored pill ([0266fdd](https://github.com/mini-app-polis/website-astro-software/commit/0266fddef9328cba46d78e7356f7e87bfe0e2aa1))
+
 ## [1.12.1](https://github.com/mini-app-polis/website-astro-software/compare/v1.12.0...v1.12.1) (2026-04-10)
 
 
