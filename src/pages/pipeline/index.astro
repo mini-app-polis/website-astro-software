@@ -405,9 +405,11 @@ const subtitle =
             var violationId = String(f.violation_id || "").trim();
             if (violationId) {
               html +=
-                '<div class="font-mono text-xs text-slate-500">' +
+                '<span class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-mono ' +
+                sc +
+                '">' +
                 escapeHtml(violationId) +
-                "</div>";
+                "</span>";
             }
             html +=
               '<div class="text-sm font-medium text-slate-200">' + escapeHtml(dim) + "</div>";
