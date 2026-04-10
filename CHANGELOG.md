@@ -1,3 +1,10 @@
+## [1.12.1](https://github.com/mini-app-polis/website-astro-software/compare/v1.12.0...v1.12.1) (2026-04-10)
+
+
+### Bug Fixes
+
+* **pipeline:** remove redundant per-card timestamps — time shown at run group header level ([7c4d5fe](https://github.com/mini-app-polis/website-astro-software/commit/7c4d5fe7bd60b938fe32712f63fea329d174e2c2))
+
 # [1.12.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.11.0...v1.12.0) (2026-04-10)
 
 
