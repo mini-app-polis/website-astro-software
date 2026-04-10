@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.11.0...v1.12.0) (2026-04-10)
+
+
+### Features
+
+* **pipeline:** show violation_id on findings cards; unify timestamp to footer row ([3e2e7a7](https://github.com/mini-app-polis/website-astro-software/commit/3e2e7a7d1cf743e4ab1fd530bea66eabf3e26d92))
+
 # [1.11.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.10.0...v1.11.0) (2026-04-09)
 
 
