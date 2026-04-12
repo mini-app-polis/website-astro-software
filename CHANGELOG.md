@@ -1,3 +1,10 @@
+# [1.14.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.13.0...v1.14.0) (2026-04-12)
+
+
+### Features
+
+* **pipeline:** add CRITICAL and SUCCESS severity — colors, filter buttons, pinning logic ([87b29cf](https://github.com/mini-app-polis/website-astro-software/commit/87b29cf051d7a2796e9c5a0baebc62b8a77b76dd))
+
 # [1.13.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.12.1...v1.13.0) (2026-04-10)
 
 
