@@ -54,14 +54,17 @@
 
       function severityClass(level) {
         const s = String(level ?? "").toUpperCase();
+        if (s === "CRITICAL") return "text-rose-300 border-rose-500/40 bg-rose-500/15";
         if (s === "ERROR") return "text-red-400 border-red-500/30 bg-red-500/10";
         if (s === "WARN" || s === "WARNING") return "text-amber-400 border-amber-500/30 bg-amber-500/10";
+        if (s === "SUCCESS") return "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
         return "text-slate-300 border-slate-500/30 bg-slate-500/10";
       }
 
       function normalizeSeverity(level) {
         const s = String(level ?? "INFO").toUpperCase();
         if (s === "WARNING") return "WARN";
+        if (s === "CRITICAL" || s === "SUCCESS") return s;
         return s;
       }
 
@@ -125,7 +128,7 @@
           const pinned = [
             ...collapsed.filter((f) => {
               const sev = normalizeSeverity(f?._severity ?? f?.severity);
-              return sev === "ERROR" || sev === "WARN";
+              return sev === "CRITICAL" || sev === "ERROR" || sev === "WARN";
             }),
             ...collapsed.filter((f) => normalizeSeverity(f?._severity ?? f?.severity) === "INFO"),
           ].slice(0, 5);
