@@ -96,7 +96,9 @@
       // -- Helpers -----------------------------------------------
       function normalizeSeverity(level) {
         const s = String(level ?? "INFO").toUpperCase();
-        return s === "WARNING" ? "WARN" : s;
+        if (s === "WARNING") return "WARN";
+        if (s === "CRITICAL" || s === "SUCCESS") return s;
+        return s;
       }
 
       function relativeTime(iso) {
@@ -114,21 +116,25 @@
       }
 
       function countSeverities(findings) {
-        let error = 0, warn = 0, info = 0;
+        let critical = 0, error = 0, warn = 0, info = 0, success = 0;
         for (const f of findings) {
           const sev = normalizeSeverity(f?.severity);
-          if (sev === "ERROR") error++;
+          if (sev === "CRITICAL") critical++;
+          else if (sev === "ERROR") error++;
           else if (sev === "WARN") warn++;
+          else if (sev === "SUCCESS") success++;
           else info++;
         }
-        return { error, warn, info };
+        return { critical, error, warn, info, success };
       }
 
-      function formatCounts({ error, warn, info }) {
+      function formatCounts({ critical, error, warn, info, success }) {
         const parts = [];
+        if (critical > 0) parts.push(`<span class="text-rose-300">${critical} critical</span>`);
         if (error > 0) parts.push(`<span class="text-red-400">${error} error</span>`);
         if (warn > 0) parts.push(`<span class="text-amber-400">${warn} warn</span>`);
         if (info > 0) parts.push(`<span class="text-slate-400">${info} info</span>`);
+        if (success > 0) parts.push(`<span class="text-emerald-400">${success} success</span>`);
         return parts.join('<span class="text-slate-600"> · </span>') || '<span class="text-slate-500">No findings</span>';
       }
 
@@ -225,15 +231,17 @@
           const key = String(f?.repo || f?.repository || "unknown").trim();
           const sev = normalizeSeverity(f?.severity);
           const ts = new Date(f?.evaluated_at || f?.created_at || 0).getTime();
-          if (!map.has(key)) map.set(key, { error: 0, warn: 0, info: 0, latestMs: 0 });
+          if (!map.has(key)) map.set(key, { critical: 0, error: 0, warn: 0, info: 0, success: 0, latestMs: 0 });
           const e = map.get(key);
-          if (sev === "ERROR") e.error++;
+          if (sev === "CRITICAL") e.critical++;
+          else if (sev === "ERROR") e.error++;
           else if (sev === "WARN") e.warn++;
+          else if (sev === "SUCCESS") e.success++;
           else e.info++;
           if (!Number.isNaN(ts) && ts > e.latestMs) e.latestMs = ts;
         }
         return [...map.entries()]
-          .sort(([, a], [, b]) => b.error - a.error || b.warn - a.warn)
+          .sort(([, a], [, b]) => (b.critical + b.error) - (a.critical + a.error) || b.warn - a.warn)
           .map(([key, counts]) => ({ label: key, mono: true, ...counts }));
       }
 
@@ -243,15 +251,17 @@
           const key = String(f?.dimension || "unknown").trim();
           const sev = normalizeSeverity(f?.severity);
           const ts = new Date(f?.evaluated_at || f?.created_at || 0).getTime();
-          if (!map.has(key)) map.set(key, { error: 0, warn: 0, info: 0, latestMs: 0 });
+          if (!map.has(key)) map.set(key, { critical: 0, error: 0, warn: 0, info: 0, success: 0, latestMs: 0 });
           const e = map.get(key);
-          if (sev === "ERROR") e.error++;
+          if (sev === "CRITICAL") e.critical++;
+          else if (sev === "ERROR") e.error++;
           else if (sev === "WARN") e.warn++;
+          else if (sev === "SUCCESS") e.success++;
           else e.info++;
           if (!Number.isNaN(ts) && ts > e.latestMs) e.latestMs = ts;
         }
         return [...map.entries()]
-          .sort(([, a], [, b]) => b.error - a.error || b.warn - a.warn)
+          .sort(([, a], [, b]) => (b.critical + b.error) - (a.critical + a.error) || b.warn - a.warn)
           .map(([key, counts]) => ({ label: formatDimension(key), mono: false, ...counts }));
       }
 
@@ -277,10 +287,12 @@
             "reveal flex items-center justify-between gap-4 rounded-lg border border-white/5 bg-black/10 px-4 py-3";
           row.style.setProperty("--d", `${idx * 80}ms`);
 
+          const critTag = item.critical > 0 ? `<span class="text-rose-300">${item.critical} critical</span>` : "";
           const errTag = item.error > 0 ? `<span class="text-red-400">${item.error} error</span>` : "";
           const warnTag = item.warn > 0 ? `<span class="text-amber-400">${item.warn} warn</span>` : "";
           const infoTag = item.info > 0 ? `<span class="text-slate-400">${item.info} info</span>` : "";
-          const tags = [errTag, warnTag, infoTag].filter(Boolean).join(" · ");
+          const successTag = item.success > 0 ? `<span class="text-emerald-400">${item.success} success</span>` : "";
+          const tags = [critTag, errTag, warnTag, infoTag, successTag].filter(Boolean).join(" · ");
 
           row.innerHTML = `
             <div class="min-w-0">
