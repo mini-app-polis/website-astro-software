@@ -1,3 +1,10 @@
+# [1.15.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.14.0...v1.15.0) (2026-04-12)
+
+
+### Features
+
+* **summary:** add CRITICAL and SUCCESS severity support to EvaluationSummary ([ebe2308](https://github.com/mini-app-polis/website-astro-software/commit/ebe230824eb8bc16038fb21a1f3df5cb459cc1a9))
+
 # [1.14.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.13.0...v1.14.0) (2026-04-12)
 
 
