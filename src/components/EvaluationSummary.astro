@@ -22,12 +22,15 @@
       <button type="button" data-view="dimension" class="rounded-full px-3 py-1 transition-colors">
         By Dimension
       </button>
+      <button type="button" data-view="rule" class="rounded-full px-3 py-1 transition-colors">
+        By Rule
+      </button>
     </div>
   </div>
 
   <!-- Run type selector — one card per source bucket -->
-  <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3" data-eval-source-tabs>
-    {["Deterministic", "LLM Conformance", "Pipeline Eval"].map((label) => (
+  <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4" data-eval-source-tabs>
+    {["Deterministic", "LLM Conformance", "Pipeline Eval", "Introspection"].map((label) => (
       <button
         type="button"
         class="rounded-lg border border-white/5 bg-black/10 px-4 py-3 text-left transition-colors hover:border-white/10"
@@ -73,32 +76,34 @@
       const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
 
       let currentView = "repo";
-      // selectedSource is one of "deterministic", "llm", "pipeline"
+      // selectedSource is one of "deterministic", "llm", "pipeline", "introspection"
       let selectedSource = "deterministic";
       // findingsByBucket: keyed by bucket name, value is array of findings
-      let findingsByBucket = { deterministic: [], llm: [], pipeline: [] };
+      let findingsByBucket = {
+        deterministic: [],
+        llm: [],
+        pipeline: [],
+        introspection: [],
+      };
 
       // Source value -> bucket name
       // Seven canonical source values (see ecosystem-standards/standards/evaluation.yaml):
-      //   conformance_deterministic, standards_drift, data_quality -> deterministic bucket
-      //     (all three are emitted by deterministic check code in evaluator-cog;
-      //      standards_drift and data_quality are introspection checks that live
-      //      in engine/deterministic/introspection.py)
-      //   conformance_llm -> llm bucket
-      //   flow_inline, flow_hook, prefect_webhook -> pipeline bucket
+      //   conformance_deterministic      -> deterministic
+      //   conformance_llm                -> llm
+      //   flow_inline, flow_hook,        -> pipeline
+      //   prefect_webhook
+      //   standards_drift, data_quality  -> introspection  (evaluator's own
+      //     output / inventory — not about any target repo)
       function sourceToBucket(source) {
         const s = String(source || "");
-        if (
-          s === "conformance_deterministic" ||
-          s === "standards_drift" ||
-          s === "data_quality"
-        ) return "deterministic";
+        if (s === "conformance_deterministic") return "deterministic";
         if (s === "conformance_llm") return "llm";
         if (
           s === "flow_inline" ||
           s === "flow_hook" ||
           s === "prefect_webhook"
         ) return "pipeline";
+        if (s === "standards_drift" || s === "data_quality") return "introspection";
         // Unknown/legacy source — fall back to pipeline bucket so it's still
         // visible rather than silently dropped.
         return "pipeline";
@@ -109,6 +114,7 @@
         deterministic: "Deterministic",
         llm: "LLM Conformance",
         pipeline: "Pipeline Eval",
+        introspection: "Introspection",
       };
 
       // -- Helpers -----------------------------------------------
@@ -242,7 +248,7 @@
         renderList();
       });
 
-      // -- List (By Repo / By Dimension) -------------------------
+      // -- List (By Repo / By Dimension / By Rule) ---------------
       function aggregateByRepo(findings) {
         const map = new Map();
         for (const f of findings) {
@@ -283,11 +289,40 @@
           .map(([key, counts]) => ({ label: formatDimension(key), mono: false, ...counts }));
       }
 
+      // Group findings by rule identifier. The API's `violation_id` field
+      // carries the rule code (e.g. "CD-012", "EVAL-007"). Fall back to
+      // `rule_id`, then dimension, then "unknown" so every finding lands
+      // under some key.
+      function aggregateByRule(findings) {
+        const map = new Map();
+        for (const f of findings) {
+          const rawKey =
+            f?.violation_id || f?.rule_id || f?.dimension || "unknown";
+          const key = String(rawKey).trim() || "unknown";
+          const sev = normalizeSeverity(f?.severity);
+          const ts = new Date(f?.evaluated_at || f?.created_at || 0).getTime();
+          if (!map.has(key)) map.set(key, { critical: 0, error: 0, warn: 0, info: 0, success: 0, latestMs: 0 });
+          const e = map.get(key);
+          if (sev === "CRITICAL") e.critical++;
+          else if (sev === "ERROR") e.error++;
+          else if (sev === "WARN") e.warn++;
+          else if (sev === "SUCCESS") e.success++;
+          else e.info++;
+          if (!Number.isNaN(ts) && ts > e.latestMs) e.latestMs = ts;
+        }
+        return [...map.entries()]
+          .sort(([, a], [, b]) => (b.critical + b.error) - (a.critical + a.error) || b.warn - a.warn)
+          .map(([key, counts]) => ({ label: key, mono: true, ...counts }));
+      }
+
       function renderList() {
         const findings = findingsByBucket[selectedSource] || [];
-        const rows = currentView === "repo"
-          ? aggregateByRepo(findings)
-          : aggregateByDimension(findings);
+        const rows =
+          currentView === "repo"
+            ? aggregateByRepo(findings)
+            : currentView === "rule"
+              ? aggregateByRule(findings)
+              : aggregateByDimension(findings);
 
         listEl.innerHTML = "";
 
@@ -369,7 +404,12 @@
             : allFindings;
 
           // Split into buckets
-          findingsByBucket = { deterministic: [], llm: [], pipeline: [] };
+          findingsByBucket = {
+            deterministic: [],
+            llm: [],
+            pipeline: [],
+            introspection: [],
+          };
           for (const f of findings) {
             const bucket = sourceToBucket(f?.source);
             findingsByBucket[bucket].push(f);
