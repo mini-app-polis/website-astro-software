@@ -1,3 +1,10 @@
+# [1.16.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.15.1...v1.16.0) (2026-04-21)
+
+
+### Features
+
+* adding 4th bucket, adding view by rule ([8e66093](https://github.com/mini-app-polis/website-astro-software/commit/8e660932278edc0b3d8605a93e9926eaa60d33ab))
+
 ## [1.15.1](https://github.com/mini-app-polis/website-astro-software/compare/v1.15.0...v1.15.1) (2026-04-21)
 
 
