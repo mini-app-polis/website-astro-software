@@ -1,3 +1,10 @@
+## [1.16.1](https://github.com/mini-app-polis/website-astro-software/compare/v1.16.0...v1.16.1) (2026-04-21)
+
+
+### Bug Fixes
+
+* pagination issue for findings ([ced868e](https://github.com/mini-app-polis/website-astro-software/commit/ced868e7ac9b0f58a9f006f2a3a271c85a02ab42))
+
 # [1.16.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.15.1...v1.16.0) (2026-04-21)
 
 
