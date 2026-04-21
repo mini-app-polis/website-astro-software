@@ -94,10 +94,14 @@
       //   prefect_webhook
       //   standards_drift, data_quality  -> introspection  (evaluator's own
       //     output / inventory — not about any target repo)
+      //
+      // Legacy aliases during source-rename transition (pre-rename rows still
+      // live in the DB with these names):
+      //   conformance_check -> llm  (the old name for conformance_llm)
       function sourceToBucket(source) {
         const s = String(source || "");
         if (s === "conformance_deterministic") return "deterministic";
-        if (s === "conformance_llm") return "llm";
+        if (s === "conformance_llm" || s === "conformance_check") return "llm";
         if (
           s === "flow_inline" ||
           s === "flow_hook" ||
@@ -365,18 +369,53 @@
       }
 
       // -- Load --------------------------------------------------
+      // Page through /v1/evaluations until we've collected every eligible
+      // row the API would return (or we hit the safety cap). The API
+      // already filters server-side to "latest run per (repo, source)" via
+      // its eligibility subquery, so the envelope's `total` is the bounded
+      // count of rows we need to pull. Using the envelope `total` lets us
+      // stop cleanly rather than hoping a single large limit is enough.
+      async function fetchAllEvaluations() {
+        const PAGE_SIZE = 500; // API cap
+        const SAFETY_CAP = 5000;
+        const collected = [];
+        let offset = 0;
+
+        // First page — reads total from envelope.
+        const firstRes = await fetch(
+          `${baseUrl}/v1/evaluations?limit=${PAGE_SIZE}&offset=0`,
+          { cache: "no-store" }
+        );
+        if (!firstRes.ok) return null;
+        const firstJson = await firstRes.json();
+        const firstData = firstJson?.data ?? [];
+        if (!Array.isArray(firstData)) return null;
+        collected.push(...firstData);
+        const total = Number(firstJson?.total ?? firstData.length);
+        offset = collected.length;
+
+        // Remaining pages — bounded by total and safety cap. The inner
+        // break on data.length === 0 handles the case where the API
+        // stops returning rows earlier than `total` suggests.
+        while (offset < total && collected.length < SAFETY_CAP) {
+          const res = await fetch(
+            `${baseUrl}/v1/evaluations?limit=${PAGE_SIZE}&offset=${offset}`,
+            { cache: "no-store" }
+          );
+          if (!res.ok) break;
+          const json = await res.json();
+          const data = json?.data ?? [];
+          if (!Array.isArray(data) || data.length === 0) break;
+          collected.push(...data);
+          offset += data.length;
+        }
+
+        return collected;
+      }
+
       async function load() {
         try {
-          const res = await fetch(`${baseUrl}/v1/evaluations?limit=200`, {
-            cache: "no-store",
-          });
-          if (!res.ok) {
-            root.classList.add("hidden");
-            return;
-          }
-
-          const json = await res.json();
-          const allFindings = json?.data ?? [];
+          const allFindings = await fetchAllEvaluations();
           if (!Array.isArray(allFindings) || allFindings.length === 0) {
             root.classList.add("hidden");
             return;
