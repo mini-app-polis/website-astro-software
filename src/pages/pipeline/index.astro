@@ -123,7 +123,7 @@ const subtitle =
             </button>
             <button
               type="button"
-              data-source="conformance_deterministic"
+              data-source="conformance_deterministic,standards_drift,data_quality"
               data-selected="false"
               aria-pressed="false"
               class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent"
@@ -132,7 +132,7 @@ const subtitle =
             </button>
             <button
               type="button"
-              data-source="conformance_check"
+              data-source="conformance_llm"
               data-selected="false"
               aria-pressed="false"
               class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent"
@@ -141,7 +141,7 @@ const subtitle =
             </button>
             <button
               type="button"
-              data-source="flow_inline"
+              data-source="flow_inline,flow_hook,prefect_webhook"
               data-selected="false"
               aria-pressed="false"
               class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent"
@@ -262,7 +262,20 @@ const subtitle =
             if (findingDimension(f) !== selectedDimension) return false;
           }
           if (selectedSource) {
-            if (String(f.source || "").trim() !== selectedSource) return false;
+            // selectedSource may be a single source string ("flow_inline")
+            // or a comma-separated list of source strings for a bucket
+            // ("flow_inline,flow_hook,prefect_webhook"). Match if the row's
+            // source is in the set.
+            var allowed = selectedSource.split(",");
+            var rowSource = String(f.source || "").trim();
+            var matched = false;
+            for (var k = 0; k < allowed.length; k++) {
+              if (allowed[k].trim() === rowSource) {
+                matched = true;
+                break;
+              }
+            }
+            if (!matched) return false;
           }
           return true;
         });

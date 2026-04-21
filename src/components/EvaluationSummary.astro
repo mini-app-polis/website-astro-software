@@ -79,10 +79,28 @@
       let findingsByBucket = { deterministic: [], llm: [], pipeline: [] };
 
       // Source value -> bucket name
+      // Seven canonical source values (see ecosystem-standards/standards/evaluation.yaml):
+      //   conformance_deterministic, standards_drift, data_quality -> deterministic bucket
+      //     (all three are emitted by deterministic check code in evaluator-cog;
+      //      standards_drift and data_quality are introspection checks that live
+      //      in engine/deterministic/introspection.py)
+      //   conformance_llm -> llm bucket
+      //   flow_inline, flow_hook, prefect_webhook -> pipeline bucket
       function sourceToBucket(source) {
         const s = String(source || "");
-        if (s === "conformance_deterministic") return "deterministic";
-        if (s === "conformance_check") return "llm";
+        if (
+          s === "conformance_deterministic" ||
+          s === "standards_drift" ||
+          s === "data_quality"
+        ) return "deterministic";
+        if (s === "conformance_llm") return "llm";
+        if (
+          s === "flow_inline" ||
+          s === "flow_hook" ||
+          s === "prefect_webhook"
+        ) return "pipeline";
+        // Unknown/legacy source — fall back to pipeline bucket so it's still
+        // visible rather than silently dropped.
         return "pipeline";
       }
 

@@ -70,9 +70,16 @@
 
       function sourceLabel(source) {
         if (!source) return null;
+        // Pipeline-eval sources (behavioral — did a run behave correctly?)
         if (source === "prefect_webhook") return "automation";
         if (source === "flow_hook") return "crash hook";
         if (source === "flow_inline") return "pipeline";
+        // Conformance sources (structural — does the repo meet the standards?)
+        if (source === "conformance_deterministic") return "deterministic";
+        if (source === "conformance_llm") return "llm";
+        // Evaluator introspection sources (evaluator's own output / inventory)
+        if (source === "standards_drift") return "drift";
+        if (source === "data_quality") return "data quality";
         return source;
       }
 
