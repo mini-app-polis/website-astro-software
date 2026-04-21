@@ -1,3 +1,10 @@
+## [1.15.1](https://github.com/mini-app-polis/website-astro-software/compare/v1.15.0...v1.15.1) (2026-04-21)
+
+
+### Bug Fixes
+
+* regroupings based on current data labels ([86df450](https://github.com/mini-app-polis/website-astro-software/commit/86df4504b1f0c8a4f33f658f9b551e11c2cbfd0d))
+
 # [1.15.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.14.0...v1.15.0) (2026-04-12)
 
 
