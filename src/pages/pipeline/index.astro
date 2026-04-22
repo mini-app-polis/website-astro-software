@@ -313,6 +313,56 @@ const subtitle =
         return runs;
       }
 
+      // Reduce `findings` to rows from the latest run_id per (repo, source)
+      // pair. Prior runs for the same (repo, source) are treated as
+      // superseded and dropped, so the Findings list reflects current
+      // state instead of cumulative history. Pairs without an identifiable
+      // run_id are passed through unchanged.
+      function scopeToLatestRunPerRepoSource(findings) {
+        // First pass: for each (repo, source), find the max timestamp and
+        // its associated run_id.
+        var latestByPair = new Map();
+        for (var i = 0; i < findings.length; i++) {
+          var f = findings[i];
+          var repo = findingRepo(f);
+          var source = String(f.source || "").trim();
+          if (!repo || !source) continue;
+          var runId = f.run_id != null ? String(f.run_id) : "";
+          if (!runId) continue;
+          var ts = new Date(evaluatedAt(f) || 0).getTime();
+          if (Number.isNaN(ts)) continue;
+          var key = repo + "\u0000" + source;
+          var existing = latestByPair.get(key);
+          if (!existing || ts > existing.ts) {
+            latestByPair.set(key, { ts: ts, runId: runId });
+          }
+        }
+
+        // Build the set of latest (repo, source, run_id) triples.
+        var latestTriples = new Set();
+        latestByPair.forEach(function (v, key) {
+          latestTriples.add(key + "\u0000" + v.runId);
+        });
+
+        // Second pass: keep rows that either belong to a latest triple, or
+        // lack the data we need to place them (missing repo / source /
+        // run_id) so unexpected rows still surface.
+        var kept = [];
+        for (var k = 0; k < findings.length; k++) {
+          var g = findings[k];
+          var gRepo = findingRepo(g);
+          var gSource = String(g.source || "").trim();
+          var gRunId = g.run_id != null ? String(g.run_id) : "";
+          if (!gRepo || !gSource || !gRunId) {
+            kept.push(g);
+            continue;
+          }
+          var tKey = gRepo + "\u0000" + gSource + "\u0000" + gRunId;
+          if (latestTriples.has(tKey)) kept.push(g);
+        }
+        return kept;
+      }
+
       function setButtonGroup(container, attrName, value) {
         var btns = container.querySelectorAll("button[" + attrName + "]");
         for (var i = 0; i < btns.length; i++) {
@@ -390,8 +440,9 @@ const subtitle =
       }
 
       function render() {
-        var filtered = filterFindings(allFindings);
-        if (allFindings.length === 0) {
+        var current = scopeToLatestRunPerRepoSource(allFindings);
+        var filtered = filterFindings(current);
+        if (current.length === 0) {
           emptyEl.textContent = "No pipeline evaluations recorded yet.";
           emptyEl.classList.remove("hidden");
           listEl.innerHTML = "";
@@ -528,8 +579,9 @@ const subtitle =
           for (var i = 0; i < chunk.length; i++) allFindings.push(chunk[i]);
           hasMore = chunk.length === pageSize;
           nextOffset += chunk.length;
-          buildRepoButtons(allFindings);
-          buildDimensionButtons(allFindings);
+          var currentForButtons = scopeToLatestRunPerRepoSource(allFindings);
+          buildRepoButtons(currentForButtons);
+          buildDimensionButtons(currentForButtons);
         } catch (e) {
           allFindings = [];
           hasMore = false;
