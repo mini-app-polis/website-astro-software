@@ -1,3 +1,10 @@
+## [1.16.2](https://github.com/mini-app-polis/website-astro-software/compare/v1.16.1...v1.16.2) (2026-04-22)
+
+
+### Bug Fixes
+
+* **pipeline:** scope Findings list to latest run per (repo, source) ([5ecfa07](https://github.com/mini-app-polis/website-astro-software/commit/5ecfa074a8c1fbd147f21e3e2db5660eaee66415))
+
 ## [1.16.1](https://github.com/mini-app-polis/website-astro-software/compare/v1.16.0...v1.16.1) (2026-04-21)
 
 
