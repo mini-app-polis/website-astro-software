@@ -1,24 +1,15 @@
 ---
 import Page from "../../layouts/Page.astro";
-import PipelineTabs from "../../components/PipelineTabs.astro";
 
-const subtitle =
-  "AI evaluation findings from every pipeline run, evaluated by Claude against the engineering standards document.";
+const subtitleHtml =
+  'Findings scored against the <a href="/standards" class="text-accent hover:underline">standards</a>.';
 ---
 
-<Page title="Pipeline Health" subtitle={subtitle}>
+<Page title="Pipeline Health" subtitleHtml={subtitleHtml}>
   <div class="space-y-12">
-    <PipelineTabs />
-
     <section class="space-y-5" data-pipeline-browser>
       <div>
         <h2 class="font-display text-xl tracking-tight">Findings</h2>
-        <p class="mt-1 text-sm text-slate-400">
-          Browse individual findings from recent pipeline runs. Filter by severity and repository.
-          See the
-          <a href="/pipeline/summary" class="text-accent hover:underline">ecosystem summary</a>
-          for unfiltered health across every repo and run type.
-        </p>
       </div>
 
       <div class="flex flex-wrap items-center gap-x-8 gap-y-3">

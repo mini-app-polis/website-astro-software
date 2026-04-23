@@ -1,19 +1,13 @@
 ---
 import Page from "../../../layouts/Page.astro";
 import EvaluationSummary from "../../../components/EvaluationSummary.astro";
-import PipelineTabs from "../../../components/PipelineTabs.astro";
 
-const subtitle =
-  "Ecosystem-wide pipeline health across every repo and run type. For filtered findings, see the Pipeline page.";
+const subtitleHtml =
+  'Ecosystem health scored against the <a href="/standards" class="text-accent hover:underline">standards</a>.';
 ---
 
-<Page title="Pipeline Summary" subtitle={subtitle}>
+<Page title="Pipeline Summary" subtitleHtml={subtitleHtml}>
   <div class="space-y-6">
-    <PipelineTabs />
     <EvaluationSummary />
-    <p class="text-sm text-slate-400">
-      Browse individual findings on the
-      <a href="/pipeline" class="text-accent hover:underline">Pipeline page</a>.
-    </p>
   </div>
 </Page>

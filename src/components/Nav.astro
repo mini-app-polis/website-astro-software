@@ -1,20 +1,43 @@
 ---
 const { pathname } = Astro.url;
 
-type NavItem = { href: string; label: string };
+type NavChild = { href: string; label: string };
+type NavItem = {
+  href: string;
+  label: string;
+  children?: NavChild[];
+};
+
 const items: NavItem[] = [
   { href: "/", label: "Home" },
   { href: "/ecosystem", label: "Ecosystem" },
   { href: "/standards", label: "Standards" },
-  { href: "/pipeline", label: "Pipeline" },
+  {
+    href: "/pipeline",
+    label: "Pipeline",
+    children: [
+      { href: "/pipeline", label: "Details" },
+      { href: "/pipeline/summary", label: "Summary" },
+    ],
+  },
   { href: "/flags", label: "Flags" },
   { href: "/resume", label: "Resume" },
   { href: "/booking", label: "Booking" },
 ];
 
+function normalize(p: string) {
+  // Collapse trailing slash except for the root.
+  if (p.length > 1 && p.endsWith("/")) return p.slice(0, -1);
+  return p;
+}
+
 function isActive(href: string) {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function isExactActive(href: string) {
+  return normalize(pathname) === normalize(href);
 }
 ---
 
@@ -29,20 +52,181 @@ function isActive(href: string) {
   <div class="flex gap-5 text-sm">
     {items.map((item) => {
       const active = isActive(item.href);
+      const baseLinkClass = `transition-colors ${
+        active ? "text-accent" : "text-slate-300 hover:text-slate-100"
+      }`;
+
+      if (!item.children || item.children.length === 0) {
+        return (
+          <a
+            href={item.href}
+            class={baseLinkClass}
+            aria-current={active ? "page" : undefined}
+          >
+            {item.label}
+          </a>
+        );
+      }
+
+      // Item with a dropdown. Keeps its own link behaviour so clicking
+      // the label still lands on the parent page; the caret opens the
+      // submenu. Hover opens it too (desktop). Escape / outside-click
+      // close it. No JS framework — plain vanilla.
       return (
-        <a
-          href={item.href}
-          class={`transition-colors ${
-            active
-              ? "text-accent"
-              : "text-slate-300 hover:text-slate-100"
-          }`}
-          aria-current={active ? "page" : undefined}
-        >
-          {item.label}
-        </a>
+        <div class="relative" data-nav-dropdown>
+          <div class="inline-flex items-baseline">
+            <a
+              href={item.href}
+              class={baseLinkClass}
+              aria-current={active ? "page" : undefined}
+            >
+              {item.label}
+            </a>
+            <button
+              type="button"
+              class={`ml-1 inline-flex items-center px-1 transition-colors ${
+                active ? "text-accent" : "text-slate-400 hover:text-slate-100"
+              }`}
+              data-nav-dropdown-toggle
+              aria-haspopup="menu"
+              aria-expanded="false"
+              aria-label={`${item.label} sections`}
+            >
+              <svg
+                class="h-3 w-3 transition-transform"
+                data-nav-dropdown-caret
+                viewBox="0 0 20 20"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M5 7l5 5 5-5"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <div
+            class="absolute right-0 top-full z-20 mt-2 hidden w-44 rounded-lg border border-white/10 bg-[#0b0f15] p-1 shadow-soft"
+            role="menu"
+            data-nav-dropdown-menu
+          >
+            {item.children.map((child) => {
+              const childActive = isExactActive(child.href);
+              return (
+                <a
+                  href={child.href}
+                  role="menuitem"
+                  aria-current={childActive ? "page" : undefined}
+                  class={`block rounded px-3 py-2 text-sm transition-colors ${
+                    childActive
+                      ? "bg-accent/15 text-accent"
+                      : "text-slate-300 hover:bg-white/[0.04] hover:text-slate-100"
+                  }`}
+                >
+                  {child.label}
+                </a>
+              );
+            })}
+          </div>
+        </div>
       );
     })}
   </div>
 </nav>
 
+<script is:inline>
+  (function () {
+    var dropdowns = document.querySelectorAll("[data-nav-dropdown]");
+    if (!dropdowns.length) return;
+
+    function closeAll(except) {
+      for (var i = 0; i < dropdowns.length; i++) {
+        if (dropdowns[i] === except) continue;
+        closeOne(dropdowns[i]);
+      }
+    }
+
+    function openOne(dd) {
+      var menu = dd.querySelector("[data-nav-dropdown-menu]");
+      var toggle = dd.querySelector("[data-nav-dropdown-toggle]");
+      var caret = dd.querySelector("[data-nav-dropdown-caret]");
+      if (!menu || !toggle) return;
+      menu.classList.remove("hidden");
+      toggle.setAttribute("aria-expanded", "true");
+      if (caret) caret.style.transform = "rotate(180deg)";
+    }
+
+    function closeOne(dd) {
+      var menu = dd.querySelector("[data-nav-dropdown-menu]");
+      var toggle = dd.querySelector("[data-nav-dropdown-toggle]");
+      var caret = dd.querySelector("[data-nav-dropdown-caret]");
+      if (!menu || !toggle) return;
+      menu.classList.add("hidden");
+      toggle.setAttribute("aria-expanded", "false");
+      if (caret) caret.style.transform = "";
+    }
+
+    function isOpen(dd) {
+      var menu = dd.querySelector("[data-nav-dropdown-menu]");
+      return menu && !menu.classList.contains("hidden");
+    }
+
+    dropdowns.forEach(function (dd) {
+      var toggle = dd.querySelector("[data-nav-dropdown-toggle]");
+      if (!toggle) return;
+
+      // Click on caret toggles.
+      toggle.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (isOpen(dd)) {
+          closeOne(dd);
+        } else {
+          closeAll(dd);
+          openOne(dd);
+        }
+      });
+
+      // Hover opens on desktop. Use pointer-fine media query to skip on
+      // touch devices where hover is synthetic and gets in the way.
+      var hoverSupported =
+        window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+      if (hoverSupported) {
+        var openTimer = null;
+        var closeTimer = null;
+        dd.addEventListener("mouseenter", function () {
+          if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
+          openTimer = setTimeout(function () {
+            closeAll(dd);
+            openOne(dd);
+          }, 60);
+        });
+        dd.addEventListener("mouseleave", function () {
+          if (openTimer) { clearTimeout(openTimer); openTimer = null; }
+          closeTimer = setTimeout(function () {
+            closeOne(dd);
+          }, 120);
+        });
+      }
+    });
+
+    // Click outside closes.
+    document.addEventListener("click", function (e) {
+      var inside = false;
+      for (var i = 0; i < dropdowns.length; i++) {
+        if (dropdowns[i].contains(e.target)) { inside = true; break; }
+      }
+      if (!inside) closeAll(null);
+    });
+
+    // Escape closes all.
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeAll(null);
+    });
+  })();
+</script>

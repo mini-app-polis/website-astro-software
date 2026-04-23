@@ -1,19 +1,27 @@
 ---
 import Base from "./Base.astro";
 
-const { title, subtitle } = Astro.props as {
+const { title, subtitle, subtitleHtml } = Astro.props as {
   title: string;
   subtitle?: string;
+  // Optional trusted HTML subtitle. When set, renders instead of `subtitle`.
+  // Must be author-controlled — not user input — because it bypasses escaping.
+  subtitleHtml?: string;
 };
+
+// Prefer explicit description from subtitle text; fall back to title.
+const description = subtitle ?? title;
 ---
 
-<Base title={title} description={subtitle ?? title}>
+<Base title={title} description={description}>
   <section class="space-y-5">
     <header>
       <h1 class="font-display text-3xl tracking-tight sm:text-4xl">
         {title}
       </h1>
-      {subtitle ? (
+      {subtitleHtml ? (
+        <p class="mt-2 text-sm text-slate-400" set:html={subtitleHtml} />
+      ) : subtitle ? (
         <p class="mt-2 text-sm text-slate-400">{subtitle}</p>
       ) : null}
     </header>
@@ -22,4 +30,3 @@ const { title, subtitle } = Astro.props as {
     </div>
   </section>
 </Base>
-
