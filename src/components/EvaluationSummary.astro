@@ -443,13 +443,10 @@
           }
 
           // Categorise each source: "sweep" sources (conformance,
-          // introspection) fire one run_id across all repos; we keep
-          // only the latest run_id per source. "per-repo" sources
-          // (prefect_webhook / flow_inline / flow_hook — pipeline-eval
-          // style) fire independently per repo; we keep the latest
-          // run_id per (repo, source) so every repo contributes its
-          // most recent pipeline eval. Unknown sources fall back to
-          // sweep.
+          // introspection) fire as part of an orchestrated flow run
+          // that covers all repos. "per-repo" sources (prefect_webhook
+          // / flow_inline / flow_hook — pipeline-eval style) fire
+          // independently per repo. Unknown sources fall back to sweep.
           const sourceCategory = (source) => {
             const s = String(source || "").trim();
             return s === "prefect_webhook" ||
@@ -459,9 +456,35 @@
               : "sweep";
           };
 
-          // Build two maps depending on source category.
-          const latestBySource = new Map(); // for sweep sources
-          const latestByRepoSource = new Map(); // for per-repo sources
+          // Group sweep sources by the flow that produces them. All
+          // sources in the same flow share a run_id and evaluated_at,
+          // so a newer run of any source in the cluster supersedes
+          // older runs of every source in that cluster — even if one
+          // of those sources produced zero findings in the newer run
+          // (e.g. standards_drift has nothing to report, so no row is
+          // written; without this clustering its prior run would
+          // appear to still be "latest" and stale rows would persist
+          // across standards-version bumps).
+          const sweepCluster = (source) => {
+            const s = String(source || "").trim();
+            if (
+              s === "conformance_deterministic" ||
+              s === "data_quality" ||
+              s === "standards_drift"
+            ) {
+              return "deterministic";
+            }
+            if (s === "conformance_llm") return "llm";
+            if (s === "conformance_check") return "legacy";
+            return s || "unknown";
+          };
+
+          // For sweep sources: track the latest timestamp per cluster
+          // and all run_ids seen at that timestamp.
+          const latestByCluster = new Map();
+          // For per-repo sources: unchanged — latest run_id per (repo, source).
+          const latestByRepoSource = new Map();
+
           for (const f of allFindings) {
             const source = String(f?.source || "").trim();
             if (!source) continue;
@@ -471,9 +494,15 @@
             if (Number.isNaN(ts)) continue;
 
             if (sourceCategory(source) === "sweep") {
-              const existing = latestBySource.get(source);
+              const cluster = sweepCluster(source);
+              const existing = latestByCluster.get(cluster);
               if (!existing || ts > existing.ts) {
-                latestBySource.set(source, { ts, runId });
+                latestByCluster.set(cluster, {
+                  ts,
+                  runIds: new Set([runId]),
+                });
+              } else if (ts === existing.ts) {
+                existing.runIds.add(runId);
               }
             } else {
               const repo = String(f?.repo || f?.repository || "").trim();
@@ -486,18 +515,22 @@
             }
           }
 
-          // Filter: keep a finding only if it belongs to one of the
-          // latest runs. Rows missing the data needed to classify
-          // (no source / no run_id, or per-repo row with no repo)
-          // pass through so unexpected data still surfaces.
+          // Filter: sweep rows pass if their timestamp equals the
+          // latest for their cluster, or their run_id matches one of
+          // the latest-cluster run_ids. Per-repo rows keep the exact
+          // (repo, source, run_id) match. Rows missing classification
+          // data pass through.
           const findings = allFindings.filter((f) => {
             const source = String(f?.source || "").trim();
             const runId = f?.run_id ?? null;
             if (!source || !runId) return true;
             if (sourceCategory(source) === "sweep") {
-              const latest = latestBySource.get(source);
+              const cluster = sweepCluster(source);
+              const latest = latestByCluster.get(cluster);
               if (!latest) return true;
-              return latest.runId === runId;
+              const ts = new Date(f?.evaluated_at || f?.created_at || 0).getTime();
+              if (!Number.isNaN(ts) && ts === latest.ts) return true;
+              return latest.runIds.has(runId);
             }
             const repo = String(f?.repo || f?.repository || "").trim();
             if (!repo) return true;

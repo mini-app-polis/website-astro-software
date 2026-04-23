@@ -322,8 +322,8 @@ const subtitleHtml =
         return runs;
       }
 
-      // Classify each finding's source as either "sweep" (one run_id
-      // covers all repos in a single orchestrated pass) or "per-repo"
+      // Classify each finding's source as either "sweep" (fires as part
+      // of an orchestrated flow run that covers all repos) or "per-repo"
       // (each repo gets its own independent run — pipeline-eval style).
       //
       // Sweep sources: conformance_deterministic, conformance_llm,
@@ -342,21 +342,52 @@ const subtitleHtml =
         return "sweep";
       }
 
-      // Reduce `findings` to the latest run per source (sweep sources)
-      // or the latest run per (repo, source) (per-repo sources). See
-      // sourceCategory above for the classification rule. Rows without
-      // identifiable source / run_id are passed through unchanged so
-      // unexpected data still surfaces rather than being silently
-      // dropped.
+      // Group sweep sources by the flow that produces them. All sources
+      // in the same flow share a run_id and evaluated_at, so a newer
+      // run of any source in the cluster supersedes older runs of
+      // every source in that cluster — even if one of those sources
+      // produced zero findings in the newer run (e.g. standards_drift
+      // has nothing to report, so no row is written; without this
+      // clustering its prior run would appear to still be "latest").
+      //
+      // Cluster assignments:
+      //   - "deterministic": conformance_deterministic + data_quality
+      //     + standards_drift (all emitted from the deterministic
+      //     conformance flow in evaluator-cog).
+      //   - "llm": conformance_llm (emitted from the LLM flow).
+      //   - "legacy": conformance_check (pre-split source name).
+      //   - Unknown sources form their own single-member cluster.
+      function sweepCluster(source) {
+        var s = String(source || "").trim();
+        if (
+          s === "conformance_deterministic" ||
+          s === "data_quality" ||
+          s === "standards_drift"
+        ) {
+          return "deterministic";
+        }
+        if (s === "conformance_llm") return "llm";
+        if (s === "conformance_check") return "legacy";
+        return s || "unknown";
+      }
+
+      // Reduce `findings` to the latest flow run per sweep cluster
+      // (sweep sources) or the latest run per (repo, source) (per-repo
+      // sources). Rows without identifiable source / run_id pass
+      // through so unexpected data still surfaces.
       //
       // Naming note: the function is still called
       // scopeToLatestRunPerRepoSource for compatibility with call
-      // sites; the behaviour is now source-dependent rather than
-      // uniformly per-(repo, source).
+      // sites; the behaviour is now cluster-aware.
       function scopeToLatestRunPerRepoSource(findings) {
-        // First pass: compute latest run_id per source (sweep) and per
-        // (repo, source) (per-repo).
-        var latestBySource = new Map();
+        // First pass: for each sweep cluster, find the latest timestamp
+        // and every run_id observed at that timestamp. Using a set
+        // tolerates the (theoretical) case of multiple sibling sources
+        // writing rows at the exact same evaluated_at with different
+        // run_ids; in practice a flow uses one run_id.
+        var latestByCluster = new Map();
+        // For per-repo sources, keep the old latest-per-(repo, source)
+        // logic.
         var latestByRepoSource = new Map();
 
         for (var i = 0; i < findings.length; i++) {
@@ -369,9 +400,15 @@ const subtitleHtml =
           if (Number.isNaN(ts)) continue;
 
           if (sourceCategory(source) === "sweep") {
-            var existing = latestBySource.get(source);
-            if (!existing || ts > existing.ts) {
-              latestBySource.set(source, { ts: ts, runId: runId });
+            var cluster = sweepCluster(source);
+            var existingC = latestByCluster.get(cluster);
+            if (!existingC || ts > existingC.ts) {
+              latestByCluster.set(cluster, {
+                ts: ts,
+                runIds: new Set([runId]),
+              });
+            } else if (ts === existingC.ts) {
+              existingC.runIds.add(runId);
             }
           } else {
             var repo = findingRepo(f);
@@ -384,10 +421,11 @@ const subtitleHtml =
           }
         }
 
-        // Second pass: keep rows that belong to one of the latest
-        // runs. Rows without the data needed to classify (missing
-        // source / run_id, or per-repo row missing repo) are passed
-        // through.
+        // Second pass: keep rows whose timestamp matches the latest for
+        // their cluster (or whose run_id is one of the latest-cluster
+        // run_ids, which handles minor within-flow timestamp drift).
+        // Per-repo rows keep the exact (repo, source, run_id) match.
+        // Rows missing classification data pass through.
         var kept = [];
         for (var k = 0; k < findings.length; k++) {
           var g = findings[k];
@@ -398,12 +436,21 @@ const subtitleHtml =
             continue;
           }
           if (sourceCategory(gSource) === "sweep") {
-            var latest = latestBySource.get(gSource);
-            if (!latest) {
+            var gCluster = sweepCluster(gSource);
+            var latestC = latestByCluster.get(gCluster);
+            if (!latestC) {
               kept.push(g);
               continue;
             }
-            if (latest.runId === gRunId) kept.push(g);
+            var gTs = new Date(evaluatedAt(g) || 0).getTime();
+            if (!Number.isNaN(gTs) && gTs === latestC.ts) {
+              kept.push(g);
+              continue;
+            }
+            if (latestC.runIds.has(gRunId)) {
+              kept.push(g);
+            }
+            // Older runs from this cluster are superseded; drop.
           } else {
             var gRepo = findingRepo(g);
             if (!gRepo) {
