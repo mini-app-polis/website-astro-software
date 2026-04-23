@@ -1,3 +1,10 @@
+# [1.17.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.16.2...v1.17.0) (2026-04-23)
+
+
+### Features
+
+* **pipeline:** move Summary to its own page, add filtered counts strip ([edc5079](https://github.com/mini-app-polis/website-astro-software/commit/edc5079659c93b851ef2e456b569a0b9d119a3ab))
+
 ## [1.16.2](https://github.com/mini-app-polis/website-astro-software/compare/v1.16.1...v1.16.2) (2026-04-22)
 
 
