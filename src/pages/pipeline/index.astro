@@ -322,52 +322,103 @@ const subtitleHtml =
         return runs;
       }
 
-      // Reduce `findings` to rows from the latest run_id per (repo, source)
-      // pair. Prior runs for the same (repo, source) are treated as
-      // superseded and dropped, so the Findings list reflects current
-      // state instead of cumulative history. Pairs without an identifiable
-      // run_id are passed through unchanged.
+      // Classify each finding's source as either "sweep" (one run_id
+      // covers all repos in a single orchestrated pass) or "per-repo"
+      // (each repo gets its own independent run — pipeline-eval style).
+      //
+      // Sweep sources: conformance_deterministic, conformance_llm,
+      // conformance_check (legacy alias), data_quality, standards_drift.
+      // Per-repo sources: prefect_webhook, flow_inline, flow_hook.
+      // Unknown sources fall back to sweep so they still surface.
+      function sourceCategory(source) {
+        var s = String(source || "").trim();
+        if (
+          s === "prefect_webhook" ||
+          s === "flow_inline" ||
+          s === "flow_hook"
+        ) {
+          return "per-repo";
+        }
+        return "sweep";
+      }
+
+      // Reduce `findings` to the latest run per source (sweep sources)
+      // or the latest run per (repo, source) (per-repo sources). See
+      // sourceCategory above for the classification rule. Rows without
+      // identifiable source / run_id are passed through unchanged so
+      // unexpected data still surfaces rather than being silently
+      // dropped.
+      //
+      // Naming note: the function is still called
+      // scopeToLatestRunPerRepoSource for compatibility with call
+      // sites; the behaviour is now source-dependent rather than
+      // uniformly per-(repo, source).
       function scopeToLatestRunPerRepoSource(findings) {
-        // First pass: for each (repo, source), find the max timestamp and
-        // its associated run_id.
-        var latestByPair = new Map();
+        // First pass: compute latest run_id per source (sweep) and per
+        // (repo, source) (per-repo).
+        var latestBySource = new Map();
+        var latestByRepoSource = new Map();
+
         for (var i = 0; i < findings.length; i++) {
           var f = findings[i];
-          var repo = findingRepo(f);
           var source = String(f.source || "").trim();
-          if (!repo || !source) continue;
+          if (!source) continue;
           var runId = f.run_id != null ? String(f.run_id) : "";
           if (!runId) continue;
           var ts = new Date(evaluatedAt(f) || 0).getTime();
           if (Number.isNaN(ts)) continue;
-          var key = repo + "\u0000" + source;
-          var existing = latestByPair.get(key);
-          if (!existing || ts > existing.ts) {
-            latestByPair.set(key, { ts: ts, runId: runId });
+
+          if (sourceCategory(source) === "sweep") {
+            var existing = latestBySource.get(source);
+            if (!existing || ts > existing.ts) {
+              latestBySource.set(source, { ts: ts, runId: runId });
+            }
+          } else {
+            var repo = findingRepo(f);
+            if (!repo) continue;
+            var key = repo + "\u0000" + source;
+            var existingRs = latestByRepoSource.get(key);
+            if (!existingRs || ts > existingRs.ts) {
+              latestByRepoSource.set(key, { ts: ts, runId: runId });
+            }
           }
         }
 
-        // Build the set of latest (repo, source, run_id) triples.
-        var latestTriples = new Set();
-        latestByPair.forEach(function (v, key) {
-          latestTriples.add(key + "\u0000" + v.runId);
-        });
-
-        // Second pass: keep rows that either belong to a latest triple, or
-        // lack the data we need to place them (missing repo / source /
-        // run_id) so unexpected rows still surface.
+        // Second pass: keep rows that belong to one of the latest
+        // runs. Rows without the data needed to classify (missing
+        // source / run_id, or per-repo row missing repo) are passed
+        // through.
         var kept = [];
         for (var k = 0; k < findings.length; k++) {
           var g = findings[k];
-          var gRepo = findingRepo(g);
           var gSource = String(g.source || "").trim();
           var gRunId = g.run_id != null ? String(g.run_id) : "";
-          if (!gRepo || !gSource || !gRunId) {
+          if (!gSource || !gRunId) {
             kept.push(g);
             continue;
           }
-          var tKey = gRepo + "\u0000" + gSource + "\u0000" + gRunId;
-          if (latestTriples.has(tKey)) kept.push(g);
+          if (sourceCategory(gSource) === "sweep") {
+            var latest = latestBySource.get(gSource);
+            if (!latest) {
+              kept.push(g);
+              continue;
+            }
+            if (latest.runId === gRunId) kept.push(g);
+          } else {
+            var gRepo = findingRepo(g);
+            if (!gRepo) {
+              kept.push(g);
+              continue;
+            }
+            var latestRs = latestByRepoSource.get(
+              gRepo + "\u0000" + gSource
+            );
+            if (!latestRs) {
+              kept.push(g);
+              continue;
+            }
+            if (latestRs.runId === gRunId) kept.push(g);
+          }
         }
         return kept;
       }

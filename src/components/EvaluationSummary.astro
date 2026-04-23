@@ -442,26 +442,69 @@
             return;
           }
 
-          // Find the latest run_id per source type
-          const latestBySource = new Map();
+          // Categorise each source: "sweep" sources (conformance,
+          // introspection) fire one run_id across all repos; we keep
+          // only the latest run_id per source. "per-repo" sources
+          // (prefect_webhook / flow_inline / flow_hook — pipeline-eval
+          // style) fire independently per repo; we keep the latest
+          // run_id per (repo, source) so every repo contributes its
+          // most recent pipeline eval. Unknown sources fall back to
+          // sweep.
+          const sourceCategory = (source) => {
+            const s = String(source || "").trim();
+            return s === "prefect_webhook" ||
+              s === "flow_inline" ||
+              s === "flow_hook"
+              ? "per-repo"
+              : "sweep";
+          };
+
+          // Build two maps depending on source category.
+          const latestBySource = new Map(); // for sweep sources
+          const latestByRepoSource = new Map(); // for per-repo sources
           for (const f of allFindings) {
-            const source = String(f?.source || "unknown");
+            const source = String(f?.source || "").trim();
+            if (!source) continue;
+            const runId = f?.run_id ?? null;
+            if (!runId) continue;
             const ts = new Date(f?.evaluated_at || f?.created_at || 0).getTime();
-            if (!Number.isNaN(ts)) {
+            if (Number.isNaN(ts)) continue;
+
+            if (sourceCategory(source) === "sweep") {
               const existing = latestBySource.get(source);
               if (!existing || ts > existing.ts) {
-                latestBySource.set(source, { ts, runId: f?.run_id ?? null });
+                latestBySource.set(source, { ts, runId });
+              }
+            } else {
+              const repo = String(f?.repo || f?.repository || "").trim();
+              if (!repo) continue;
+              const key = `${repo}\u0000${source}`;
+              const existing = latestByRepoSource.get(key);
+              if (!existing || ts > existing.ts) {
+                latestByRepoSource.set(key, { ts, runId });
               }
             }
           }
 
-          // Scope to latest run per source
-          const latestRunIds = new Set(
-            [...latestBySource.values()].map((v) => v.runId).filter(Boolean)
-          );
-          const findings = latestRunIds.size > 0
-            ? allFindings.filter((f) => latestRunIds.has(f?.run_id ?? null))
-            : allFindings;
+          // Filter: keep a finding only if it belongs to one of the
+          // latest runs. Rows missing the data needed to classify
+          // (no source / no run_id, or per-repo row with no repo)
+          // pass through so unexpected data still surfaces.
+          const findings = allFindings.filter((f) => {
+            const source = String(f?.source || "").trim();
+            const runId = f?.run_id ?? null;
+            if (!source || !runId) return true;
+            if (sourceCategory(source) === "sweep") {
+              const latest = latestBySource.get(source);
+              if (!latest) return true;
+              return latest.runId === runId;
+            }
+            const repo = String(f?.repo || f?.repository || "").trim();
+            if (!repo) return true;
+            const latest = latestByRepoSource.get(`${repo}\u0000${source}`);
+            if (!latest) return true;
+            return latest.runId === runId;
+          });
 
           // Split into buckets
           findingsByBucket = {
