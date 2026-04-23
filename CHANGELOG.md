@@ -1,3 +1,10 @@
+## [1.22.1](https://github.com/mini-app-polis/website-astro-software/compare/v1.22.0...v1.22.1) (2026-04-23)
+
+
+### Bug Fixes
+
+* **standards-browser:** fetch from raw.githubusercontent.com, not Contents API ([e7f08ea](https://github.com/mini-app-polis/website-astro-software/commit/e7f08ea7770b91b33a90d63d2da9880d4e827bf3))
+
 # [1.22.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.21.1...v1.22.0) (2026-04-23)
 
 
