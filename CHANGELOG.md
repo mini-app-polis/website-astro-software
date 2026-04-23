@@ -1,3 +1,10 @@
+# [1.19.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.18.0...v1.19.0) (2026-04-23)
+
+
+### Features
+
+* **nav:** pipeline dropdown + trim pipeline page chrome ([b00ae7b](https://github.com/mini-app-polis/website-astro-software/commit/b00ae7bb3081e47bd32f93f38e36e9d65cdd1a76))
+
 # [1.18.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.17.0...v1.18.0) (2026-04-23)
 
 
