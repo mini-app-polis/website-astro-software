@@ -1,3 +1,10 @@
+# [1.20.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.19.0...v1.20.0) (2026-04-23)
+
+
+### Features
+
+* **evaluation-summary:** add All aggregate tab ([a2baed3](https://github.com/mini-app-polis/website-astro-software/commit/a2baed36716bbbd3f5a3e933b1e2ab8785b40f71))
+
 # [1.19.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.18.0...v1.19.0) (2026-04-23)
 
 
