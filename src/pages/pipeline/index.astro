@@ -1,5 +1,6 @@
 ---
 import Page from "../../layouts/Page.astro";
+import PipelineTabs from "../../components/PipelineTabs.astro";
 
 const subtitle =
   "AI evaluation findings from every pipeline run, evaluated by Claude against the engineering standards document.";
@@ -7,6 +8,8 @@ const subtitle =
 
 <Page title="Pipeline Health" subtitle={subtitle}>
   <div class="space-y-12">
+    <PipelineTabs />
+
     <section class="space-y-5" data-pipeline-browser>
       <div>
         <h2 class="font-display text-xl tracking-tight">Findings</h2>
@@ -17,12 +20,6 @@ const subtitle =
           for unfiltered health across every repo and run type.
         </p>
       </div>
-
-      <div
-        id="pipelineFindingsCounts"
-        class="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-mono text-slate-400"
-        data-pipeline-counts
-      ></div>
 
       <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
         <div class="flex flex-wrap items-center gap-2">
@@ -162,6 +159,23 @@ const subtitle =
             </button>
           </div>
         </div>
+      </div>
+
+      <div
+        class="rounded-2xl border border-white/10 bg-white/[0.02] p-5 shadow-soft"
+        data-pipeline-counts-card
+      >
+        <div class="flex items-baseline justify-between gap-4">
+          <h3 class="font-display text-base tracking-tight">Showing</h3>
+          <div class="text-xs font-mono text-slate-400">
+            Total <span class="text-slate-200 font-semibold" id="pipelineCountsTotal">0</span>
+          </div>
+        </div>
+        <div
+          id="pipelineFindingsCounts"
+          class="mt-4 grid grid-cols-5 gap-2"
+          data-pipeline-counts
+        ></div>
       </div>
 
       <p
@@ -443,9 +457,10 @@ const subtitle =
         }
       }
 
-      // Render the severity-count strip reflecting the currently-filtered
+      // Render the severity-count cards reflecting the currently-filtered
       // findings. All five severity buckets are always shown — at zero
-      // they render in muted text so the strip has a stable shape.
+      // they render in muted color so the row has a stable shape.
+      // Matches the visual weight of the EvaluationSummary source cards.
       function renderCounts(filtered) {
         if (!countsEl) return;
         var counts = {
@@ -461,31 +476,34 @@ const subtitle =
           counts[s] += 1;
         }
         var order = ["CRITICAL", "ERROR", "WARN", "INFO", "SUCCESS"];
-        var total = filtered.length;
+        var countClasses = {
+          CRITICAL: "text-rose-300",
+          ERROR: "text-red-400",
+          WARN: "text-amber-400",
+          INFO: "text-slate-300",
+          SUCCESS: "text-emerald-400",
+        };
         var html = "";
         for (var j = 0; j < order.length; j++) {
           var key = order[j];
           var n = counts[key] || 0;
-          var muted = n === 0;
-          var sc = muted
-            ? "text-slate-600 border-slate-700/40 bg-slate-900/20"
-            : severityClass(key);
+          var isZero = n === 0;
+          var countClass = isZero ? "text-slate-600" : (countClasses[key] || "text-slate-200");
           html +=
-            '<span class="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 ' +
-            sc +
-            '">' +
-            '<span>' +
+            '<div class="rounded-lg border border-white/5 bg-black/10 px-4 py-3">' +
+            '<div class="text-xs font-mono font-medium text-slate-300">' +
             escapeHtml(key) +
-            '</span><span class="font-semibold">' +
+            "</div>" +
+            '<div class="mt-1 font-display text-2xl ' +
+            countClass +
+            '">' +
             String(n) +
-            "</span></span>";
+            "</div>" +
+            "</div>";
         }
-        html +=
-          '<span class="text-slate-500">·</span>' +
-          '<span class="text-slate-400">Total <span class="font-semibold text-slate-200">' +
-          String(total) +
-          "</span></span>";
         countsEl.innerHTML = html;
+        var totalEl = document.getElementById("pipelineCountsTotal");
+        if (totalEl) totalEl.textContent = String(filtered.length);
       }
 
       function render() {
