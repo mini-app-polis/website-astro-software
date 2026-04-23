@@ -252,6 +252,16 @@ const subtitleHtml =
         return "text-slate-300 border-slate-500/30 bg-slate-500/10";
       }
 
+      function severityRank(s) {
+        var v = String(s || "").toUpperCase();
+        if (v === "CRITICAL") return 0;
+        if (v === "ERROR") return 1;
+        if (v === "WARN") return 2;
+        if (v === "INFO") return 3;
+        if (v === "SUCCESS") return 4;
+        return 5;
+      }
+
       function findingRepo(f) {
         return String(f.repo || f.repository || "").trim();
       }
@@ -619,8 +629,23 @@ const subtitleHtml =
         var html = "";
         for (var r = 0; r < runs.length; r++) {
           var run = runs[r];
-          var headerIso = evaluatedAt(run.items[0]);
-          var headerD = headerIso ? new Date(headerIso) : null;
+          run.items.sort(function (a, b) {
+            var ra = severityRank(a.severity);
+            var rb = severityRank(b.severity);
+            if (ra !== rb) return ra - rb;
+            // Tiebreak within same severity: most-recent finding first
+            var ta = new Date(evaluatedAt(a) || 0).getTime();
+            var tb = new Date(evaluatedAt(b) || 0).getTime();
+            if (!Number.isNaN(tb - ta) && ta !== tb) return tb - ta;
+            // Final tiebreak: stable by rule_id for visual consistency
+            var rida = String(a.rule_id || a.violation_id || "");
+            var ridb = String(b.rule_id || b.violation_id || "");
+            if (rida < ridb) return -1;
+            if (rida > ridb) return 1;
+            return 0;
+          });
+
+          var headerD = run.maxTs ? new Date(run.maxTs) : null;
           var headerOk = headerD && !Number.isNaN(headerD.getTime());
           var headerDate = headerOk ? dateFmt.format(headerD) : "—";
           var headerTime = headerOk ? timeFmt.format(headerD) : "—";
