@@ -1,6 +1,5 @@
 ---
 import Page from "../../layouts/Page.astro";
-import EvaluationSummary from "../../components/EvaluationSummary.astro";
 
 const subtitle =
   "AI evaluation findings from every pipeline run, evaluated by Claude against the engineering standards document.";
@@ -8,18 +7,22 @@ const subtitle =
 
 <Page title="Pipeline Health" subtitle={subtitle}>
   <div class="space-y-12">
-    <section class="space-y-3">
-      <h2 class="font-display text-xl tracking-tight">Summary</h2>
-      <EvaluationSummary />
-    </section>
-
     <section class="space-y-5" data-pipeline-browser>
       <div>
         <h2 class="font-display text-xl tracking-tight">Findings</h2>
         <p class="mt-1 text-sm text-slate-400">
           Browse individual findings from recent pipeline runs. Filter by severity and repository.
+          See the
+          <a href="/pipeline/summary" class="text-accent hover:underline">ecosystem summary</a>
+          for unfiltered health across every repo and run type.
         </p>
       </div>
+
+      <div
+        id="pipelineFindingsCounts"
+        class="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-mono text-slate-400"
+        data-pipeline-counts
+      ></div>
 
       <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
         <div class="flex flex-wrap items-center gap-2">
@@ -187,6 +190,7 @@ const subtitle =
       var listEl = document.getElementById("pipelineFindingsList");
       var emptyEl = document.getElementById("pipelineFindingsEmpty");
       var loadMoreBtn = document.getElementById("pipelineLoadMore");
+      var countsEl = document.getElementById("pipelineFindingsCounts");
       if (!listEl || !emptyEl || !loadMoreBtn) return;
 
       var BASE = document.documentElement.dataset.apiUrl || "";
@@ -439,9 +443,55 @@ const subtitle =
         }
       }
 
+      // Render the severity-count strip reflecting the currently-filtered
+      // findings. All five severity buckets are always shown — at zero
+      // they render in muted text so the strip has a stable shape.
+      function renderCounts(filtered) {
+        if (!countsEl) return;
+        var counts = {
+          CRITICAL: 0,
+          ERROR: 0,
+          WARN: 0,
+          INFO: 0,
+          SUCCESS: 0,
+        };
+        for (var i = 0; i < filtered.length; i++) {
+          var s = normalizeSeverity(filtered[i].severity);
+          if (counts[s] == null) counts[s] = 0;
+          counts[s] += 1;
+        }
+        var order = ["CRITICAL", "ERROR", "WARN", "INFO", "SUCCESS"];
+        var total = filtered.length;
+        var html = "";
+        for (var j = 0; j < order.length; j++) {
+          var key = order[j];
+          var n = counts[key] || 0;
+          var muted = n === 0;
+          var sc = muted
+            ? "text-slate-600 border-slate-700/40 bg-slate-900/20"
+            : severityClass(key);
+          html +=
+            '<span class="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 ' +
+            sc +
+            '">' +
+            '<span>' +
+            escapeHtml(key) +
+            '</span><span class="font-semibold">' +
+            String(n) +
+            "</span></span>";
+        }
+        html +=
+          '<span class="text-slate-500">·</span>' +
+          '<span class="text-slate-400">Total <span class="font-semibold text-slate-200">' +
+          String(total) +
+          "</span></span>";
+        countsEl.innerHTML = html;
+      }
+
       function render() {
         var current = scopeToLatestRunPerRepoSource(allFindings);
         var filtered = filterFindings(current);
+        renderCounts(filtered);
         if (current.length === 0) {
           emptyEl.textContent = "No pipeline evaluations recorded yet.";
           emptyEl.classList.remove("hidden");
