@@ -29,8 +29,8 @@
   </div>
 
   <!-- Run type selector — one card per source bucket -->
-  <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4" data-eval-source-tabs>
-    {["Deterministic", "LLM Conformance", "Pipeline Eval", "Introspection"].map((label) => (
+  <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5" data-eval-source-tabs>
+    {["All", "Deterministic", "LLM Conformance", "Pipeline Eval", "Introspection"].map((label) => (
       <button
         type="button"
         class="rounded-lg border border-white/5 bg-black/10 px-4 py-3 text-left transition-colors hover:border-white/10"
@@ -76,9 +76,11 @@
       const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
 
       let currentView = "repo";
-      // selectedSource is one of "deterministic", "llm", "pipeline", "introspection"
-      let selectedSource = "deterministic";
-      // findingsByBucket: keyed by bucket name, value is array of findings
+      // selectedSource is one of "all", "deterministic", "llm", "pipeline", "introspection"
+      let selectedSource = "all";
+      // findingsByBucket: keyed by bucket name, value is array of findings.
+      // Only holds the four real buckets; "all" is computed on demand from
+      // the union so we don't double-store the data.
       let findingsByBucket = {
         deterministic: [],
         llm: [],
@@ -113,13 +115,29 @@
         return "pipeline";
       }
 
-      // Bucket name -> display label
+      // Bucket name -> display label. "all" is the aggregate view across
+      // the four real source buckets; findings are unioned on demand.
       const BUCKET_LABELS = {
+        all: "All",
         deterministic: "Deterministic",
         llm: "LLM Conformance",
         pipeline: "Pipeline Eval",
         introspection: "Introspection",
       };
+
+      // Return the findings for a given bucket; "all" flattens across the
+      // four real buckets in a deterministic order.
+      function findingsForBucket(bucket) {
+        if (bucket === "all") {
+          return [
+            ...findingsByBucket.deterministic,
+            ...findingsByBucket.llm,
+            ...findingsByBucket.pipeline,
+            ...findingsByBucket.introspection,
+          ];
+        }
+        return findingsByBucket[bucket] || [];
+      }
 
       // -- Helpers -----------------------------------------------
       function normalizeSeverity(level) {
@@ -227,7 +245,7 @@
             (k) => BUCKET_LABELS[k] === label
           );
           if (!bucket) return;
-          const findings = findingsByBucket[bucket] || [];
+          const findings = findingsForBucket(bucket);
           const counts = countSeverities(findings);
           const ts = latestTs(findings);
 
@@ -320,7 +338,7 @@
       }
 
       function renderList() {
-        const findings = findingsByBucket[selectedSource] || [];
+        const findings = findingsForBucket(selectedSource);
         const rows =
           currentView === "repo"
             ? aggregateByRepo(findings)
@@ -333,7 +351,10 @@
         if (findings.length === 0) {
           const empty = document.createElement("p");
           empty.className = "text-sm text-slate-500";
-          empty.textContent = "No findings for this run type.";
+          empty.textContent =
+            selectedSource === "all"
+              ? "No findings recorded yet."
+              : "No findings for this run type.";
           listEl.appendChild(empty);
           return;
         }
