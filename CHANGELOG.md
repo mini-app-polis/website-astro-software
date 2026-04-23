@@ -1,3 +1,10 @@
+## [1.21.1](https://github.com/mini-app-polis/website-astro-software/compare/v1.21.0...v1.21.1) (2026-04-23)
+
+
+### Bug Fixes
+
+* **pipeline:** cluster sweep sources by flow for supersede logic ([2602fa6](https://github.com/mini-app-polis/website-astro-software/commit/2602fa6767e597c449ea2e88d696a6c75630c2dd))
+
 # [1.21.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.20.0...v1.21.0) (2026-04-23)
 
 
