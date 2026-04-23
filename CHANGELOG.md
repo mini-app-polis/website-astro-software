@@ -1,3 +1,10 @@
+# [1.22.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.21.1...v1.22.0) (2026-04-23)
+
+
+### Features
+
+* **pipeline:** sort findings by severity within each run ([733c615](https://github.com/mini-app-polis/website-astro-software/commit/733c61586aca764275cbc523fbbb8f302f8a55e7))
+
 ## [1.21.1](https://github.com/mini-app-polis/website-astro-software/compare/v1.21.0...v1.21.1) (2026-04-23)
 
 
