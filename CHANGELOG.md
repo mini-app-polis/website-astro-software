@@ -1,3 +1,10 @@
+# [1.18.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.17.0...v1.18.0) (2026-04-23)
+
+
+### Features
+
+* **pipeline:** add sub-tabs + redesign filtered counts card ([8913509](https://github.com/mini-app-polis/website-astro-software/commit/8913509243f8fde8483c4243b97dbc13c7f1746a))
+
 # [1.17.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.16.2...v1.17.0) (2026-04-23)
 
 
