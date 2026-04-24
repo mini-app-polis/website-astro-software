@@ -1,3 +1,10 @@
+## [1.22.2](https://github.com/mini-app-polis/website-astro-software/compare/v1.22.1...v1.22.2) (2026-04-24)
+
+
+### Bug Fixes
+
+* let astro bundle component scripts so shared lib imports resolve ([9a4759d](https://github.com/mini-app-polis/website-astro-software/commit/9a4759dde73dfdd419e6aa15c5ff210a7f7dd383))
+
 ## [1.22.1](https://github.com/mini-app-polis/website-astro-software/compare/v1.22.0...v1.22.1) (2026-04-23)
 
 
