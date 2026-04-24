@@ -1,3 +1,10 @@
+## [1.23.1](https://github.com/mini-app-polis/website-astro-software/compare/v1.23.0...v1.23.1) (2026-04-24)
+
+
+### Bug Fixes
+
+* show full run_id in pipeline finding cards ([a1e67fd](https://github.com/mini-app-polis/website-astro-software/commit/a1e67fdce6fadfb10c1ad3495ee1c506d1d058d7))
+
 # [1.23.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.22.2...v1.23.0) (2026-04-24)
 
 
