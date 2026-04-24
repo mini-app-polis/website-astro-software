@@ -60,6 +60,19 @@
   </p>
 
   <script type="module">
+    import {
+      normalizeSeverity,
+      countSeverities,
+      formatCounts,
+      emptySeverityCounts,
+    } from "../lib/severity.ts";
+    import {
+      BUCKET_LABELS,
+      sourceCategory,
+      sourceToBucket,
+      sweepCluster,
+    } from "../lib/sources.ts";
+
     const root = document.querySelector("[data-eval-summary]");
     if (!root) throw new Error("EvaluationSummary root not found");
 
@@ -88,43 +101,6 @@
         introspection: [],
       };
 
-      // Source value -> bucket name
-      // Seven canonical source values (see ecosystem-standards/standards/evaluation.yaml):
-      //   conformance_deterministic      -> deterministic
-      //   conformance_llm                -> llm
-      //   flow_inline, flow_hook,        -> pipeline
-      //   prefect_webhook
-      //   standards_drift, data_quality  -> introspection  (evaluator's own
-      //     output / inventory — not about any target repo)
-      //
-      // Legacy aliases during source-rename transition (pre-rename rows still
-      // live in the DB with these names):
-      //   conformance_check -> llm  (the old name for conformance_llm)
-      function sourceToBucket(source) {
-        const s = String(source || "");
-        if (s === "conformance_deterministic") return "deterministic";
-        if (s === "conformance_llm" || s === "conformance_check") return "llm";
-        if (
-          s === "flow_inline" ||
-          s === "flow_hook" ||
-          s === "prefect_webhook"
-        ) return "pipeline";
-        if (s === "standards_drift" || s === "data_quality") return "introspection";
-        // Unknown/legacy source — fall back to pipeline bucket so it's still
-        // visible rather than silently dropped.
-        return "pipeline";
-      }
-
-      // Bucket name -> display label. "all" is the aggregate view across
-      // the four real source buckets; findings are unioned on demand.
-      const BUCKET_LABELS = {
-        all: "All",
-        deterministic: "Deterministic",
-        llm: "LLM Conformance",
-        pipeline: "Pipeline Eval",
-        introspection: "Introspection",
-      };
-
       // Return the findings for a given bucket; "all" flattens across the
       // four real buckets in a deterministic order.
       function findingsForBucket(bucket) {
@@ -140,13 +116,6 @@
       }
 
       // -- Helpers -----------------------------------------------
-      function normalizeSeverity(level) {
-        const s = String(level ?? "INFO").toUpperCase();
-        if (s === "WARNING") return "WARN";
-        if (s === "CRITICAL" || s === "SUCCESS") return s;
-        return s;
-      }
-
       function relativeTime(iso) {
         if (!iso) return "—";
         const d = new Date(iso);
@@ -159,29 +128,6 @@
         const hr = Math.round(min / 60);
         if (Math.abs(hr) < 24) return rtf.format(hr, "hour");
         return rtf.format(Math.round(hr / 24), "day");
-      }
-
-      function countSeverities(findings) {
-        let critical = 0, error = 0, warn = 0, info = 0, success = 0;
-        for (const f of findings) {
-          const sev = normalizeSeverity(f?.severity);
-          if (sev === "CRITICAL") critical++;
-          else if (sev === "ERROR") error++;
-          else if (sev === "WARN") warn++;
-          else if (sev === "SUCCESS") success++;
-          else info++;
-        }
-        return { critical, error, warn, info, success };
-      }
-
-      function formatCounts({ critical, error, warn, info, success }) {
-        const parts = [];
-        if (critical > 0) parts.push(`<span class="text-rose-300">${critical} critical</span>`);
-        if (error > 0) parts.push(`<span class="text-red-400">${error} error</span>`);
-        if (warn > 0) parts.push(`<span class="text-amber-400">${warn} warn</span>`);
-        if (info > 0) parts.push(`<span class="text-slate-400">${info} info</span>`);
-        if (success > 0) parts.push(`<span class="text-emerald-400">${success} success</span>`);
-        return parts.join('<span class="text-slate-600"> · </span>') || '<span class="text-slate-500">No findings</span>';
       }
 
       function latestTs(findings) {
@@ -277,17 +223,16 @@
           const key = String(f?.repo || f?.repository || "unknown").trim();
           const sev = normalizeSeverity(f?.severity);
           const ts = new Date(f?.evaluated_at || f?.created_at || 0).getTime();
-          if (!map.has(key)) map.set(key, { critical: 0, error: 0, warn: 0, info: 0, success: 0, latestMs: 0 });
+          if (!map.has(key)) map.set(key, { ...emptySeverityCounts(), latestMs: 0 });
           const e = map.get(key);
-          if (sev === "CRITICAL") e.critical++;
-          else if (sev === "ERROR") e.error++;
-          else if (sev === "WARN") e.warn++;
-          else if (sev === "SUCCESS") e.success++;
-          else e.info++;
+          e[sev]++;
           if (!Number.isNaN(ts) && ts > e.latestMs) e.latestMs = ts;
         }
         return [...map.entries()]
-          .sort(([, a], [, b]) => (b.critical + b.error) - (a.critical + a.error) || b.warn - a.warn)
+          .sort(
+            ([, a], [, b]) =>
+              (b.CRITICAL + b.ERROR) - (a.CRITICAL + a.ERROR) || b.WARN - a.WARN,
+          )
           .map(([key, counts]) => ({ label: key, mono: true, ...counts }));
       }
 
@@ -297,17 +242,16 @@
           const key = String(f?.dimension || "unknown").trim();
           const sev = normalizeSeverity(f?.severity);
           const ts = new Date(f?.evaluated_at || f?.created_at || 0).getTime();
-          if (!map.has(key)) map.set(key, { critical: 0, error: 0, warn: 0, info: 0, success: 0, latestMs: 0 });
+          if (!map.has(key)) map.set(key, { ...emptySeverityCounts(), latestMs: 0 });
           const e = map.get(key);
-          if (sev === "CRITICAL") e.critical++;
-          else if (sev === "ERROR") e.error++;
-          else if (sev === "WARN") e.warn++;
-          else if (sev === "SUCCESS") e.success++;
-          else e.info++;
+          e[sev]++;
           if (!Number.isNaN(ts) && ts > e.latestMs) e.latestMs = ts;
         }
         return [...map.entries()]
-          .sort(([, a], [, b]) => (b.critical + b.error) - (a.critical + a.error) || b.warn - a.warn)
+          .sort(
+            ([, a], [, b]) =>
+              (b.CRITICAL + b.ERROR) - (a.CRITICAL + a.ERROR) || b.WARN - a.WARN,
+          )
           .map(([key, counts]) => ({ label: formatDimension(key), mono: false, ...counts }));
       }
 
@@ -323,17 +267,16 @@
           const key = String(rawKey).trim() || "unknown";
           const sev = normalizeSeverity(f?.severity);
           const ts = new Date(f?.evaluated_at || f?.created_at || 0).getTime();
-          if (!map.has(key)) map.set(key, { critical: 0, error: 0, warn: 0, info: 0, success: 0, latestMs: 0 });
+          if (!map.has(key)) map.set(key, { ...emptySeverityCounts(), latestMs: 0 });
           const e = map.get(key);
-          if (sev === "CRITICAL") e.critical++;
-          else if (sev === "ERROR") e.error++;
-          else if (sev === "WARN") e.warn++;
-          else if (sev === "SUCCESS") e.success++;
-          else e.info++;
+          e[sev]++;
           if (!Number.isNaN(ts) && ts > e.latestMs) e.latestMs = ts;
         }
         return [...map.entries()]
-          .sort(([, a], [, b]) => (b.critical + b.error) - (a.critical + a.error) || b.warn - a.warn)
+          .sort(
+            ([, a], [, b]) =>
+              (b.CRITICAL + b.ERROR) - (a.CRITICAL + a.ERROR) || b.WARN - a.WARN,
+          )
           .map(([key, counts]) => ({ label: key, mono: true, ...counts }));
       }
 
@@ -365,12 +308,13 @@
             "reveal flex items-center justify-between gap-4 rounded-lg border border-white/5 bg-black/10 px-4 py-3";
           row.style.setProperty("--d", `${idx * 80}ms`);
 
-          const critTag = item.critical > 0 ? `<span class="text-rose-300">${item.critical} critical</span>` : "";
-          const errTag = item.error > 0 ? `<span class="text-red-400">${item.error} error</span>` : "";
-          const warnTag = item.warn > 0 ? `<span class="text-amber-400">${item.warn} warn</span>` : "";
-          const infoTag = item.info > 0 ? `<span class="text-slate-400">${item.info} info</span>` : "";
-          const successTag = item.success > 0 ? `<span class="text-emerald-400">${item.success} success</span>` : "";
-          const tags = [critTag, errTag, warnTag, infoTag, successTag].filter(Boolean).join(" · ");
+          const tags = formatCounts({
+            CRITICAL: item.CRITICAL,
+            ERROR: item.ERROR,
+            WARN: item.WARN,
+            INFO: item.INFO,
+            SUCCESS: item.SUCCESS,
+          });
 
           row.innerHTML = `
             <div class="min-w-0">
@@ -378,7 +322,7 @@
                 ${item.label}
               </div>
               <div class="mt-1 text-sm">
-                ${tags || '<span class="text-slate-500">No findings</span>'}
+                ${tags}
               </div>
             </div>
             <div class="shrink-0 text-xs text-slate-400">
@@ -441,43 +385,6 @@
             root.classList.add("hidden");
             return;
           }
-
-          // Categorise each source: "sweep" sources (conformance,
-          // introspection) fire as part of an orchestrated flow run
-          // that covers all repos. "per-repo" sources (prefect_webhook
-          // / flow_inline / flow_hook — pipeline-eval style) fire
-          // independently per repo. Unknown sources fall back to sweep.
-          const sourceCategory = (source) => {
-            const s = String(source || "").trim();
-            return s === "prefect_webhook" ||
-              s === "flow_inline" ||
-              s === "flow_hook"
-              ? "per-repo"
-              : "sweep";
-          };
-
-          // Group sweep sources by the flow that produces them. All
-          // sources in the same flow share a run_id and evaluated_at,
-          // so a newer run of any source in the cluster supersedes
-          // older runs of every source in that cluster — even if one
-          // of those sources produced zero findings in the newer run
-          // (e.g. standards_drift has nothing to report, so no row is
-          // written; without this clustering its prior run would
-          // appear to still be "latest" and stale rows would persist
-          // across standards-version bumps).
-          const sweepCluster = (source) => {
-            const s = String(source || "").trim();
-            if (
-              s === "conformance_deterministic" ||
-              s === "data_quality" ||
-              s === "standards_drift"
-            ) {
-              return "deterministic";
-            }
-            if (s === "conformance_llm") return "llm";
-            if (s === "conformance_check") return "legacy";
-            return s || "unknown";
-          };
 
           // For sweep sources: track the latest timestamp per cluster
           // and all run_ids seen at that timestamp.

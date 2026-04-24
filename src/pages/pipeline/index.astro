@@ -187,7 +187,17 @@ const subtitleHtml =
     </section>
   </div>
 
-  <script is:inline>
+  <script type="module">
+    import {
+      normalizeSeverity,
+      severityClass,
+      severityRank,
+      severityTextClass,
+      emptySeverityCounts,
+      EMISSION_SEVERITIES,
+    } from "../../lib/severity.ts";
+    import { sourceCategory, sweepCluster } from "../../lib/sources.ts";
+
     (function () {
       var root = document.querySelector("[data-pipeline-browser]");
       if (!root) return;
@@ -234,32 +244,6 @@ const subtitleHtml =
             return w.charAt(0).toUpperCase() + w.slice(1);
           })
           .join(" ");
-      }
-
-      function normalizeSeverity(level) {
-        var s = String(level || "").toUpperCase();
-        if (s === "WARNING") return "WARN";
-        if (s === "CRITICAL" || s === "SUCCESS") return s;
-        return s || "INFO";
-      }
-
-      function severityClass(level) {
-        var s = normalizeSeverity(level);
-        if (s === "CRITICAL") return "text-rose-300 border-rose-500/40 bg-rose-500/15";
-        if (s === "ERROR") return "text-red-400 border-red-500/30 bg-red-500/10";
-        if (s === "WARN") return "text-amber-400 border-amber-500/30 bg-amber-500/10";
-        if (s === "SUCCESS") return "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
-        return "text-slate-300 border-slate-500/30 bg-slate-500/10";
-      }
-
-      function severityRank(s) {
-        var v = String(s || "").toUpperCase();
-        if (v === "CRITICAL") return 0;
-        if (v === "ERROR") return 1;
-        if (v === "WARN") return 2;
-        if (v === "INFO") return 3;
-        if (v === "SUCCESS") return 4;
-        return 5;
       }
 
       function findingRepo(f) {
@@ -330,55 +314,6 @@ const subtitleHtml =
           return b.maxTs - a.maxTs;
         });
         return runs;
-      }
-
-      // Classify each finding's source as either "sweep" (fires as part
-      // of an orchestrated flow run that covers all repos) or "per-repo"
-      // (each repo gets its own independent run — pipeline-eval style).
-      //
-      // Sweep sources: conformance_deterministic, conformance_llm,
-      // conformance_check (legacy alias), data_quality, standards_drift.
-      // Per-repo sources: prefect_webhook, flow_inline, flow_hook.
-      // Unknown sources fall back to sweep so they still surface.
-      function sourceCategory(source) {
-        var s = String(source || "").trim();
-        if (
-          s === "prefect_webhook" ||
-          s === "flow_inline" ||
-          s === "flow_hook"
-        ) {
-          return "per-repo";
-        }
-        return "sweep";
-      }
-
-      // Group sweep sources by the flow that produces them. All sources
-      // in the same flow share a run_id and evaluated_at, so a newer
-      // run of any source in the cluster supersedes older runs of
-      // every source in that cluster — even if one of those sources
-      // produced zero findings in the newer run (e.g. standards_drift
-      // has nothing to report, so no row is written; without this
-      // clustering its prior run would appear to still be "latest").
-      //
-      // Cluster assignments:
-      //   - "deterministic": conformance_deterministic + data_quality
-      //     + standards_drift (all emitted from the deterministic
-      //     conformance flow in evaluator-cog).
-      //   - "llm": conformance_llm (emitted from the LLM flow).
-      //   - "legacy": conformance_check (pre-split source name).
-      //   - Unknown sources form their own single-member cluster.
-      function sweepCluster(source) {
-        var s = String(source || "").trim();
-        if (
-          s === "conformance_deterministic" ||
-          s === "data_quality" ||
-          s === "standards_drift"
-        ) {
-          return "deterministic";
-        }
-        if (s === "conformance_llm") return "llm";
-        if (s === "conformance_check") return "legacy";
-        return s || "unknown";
       }
 
       // Reduce `findings` to the latest flow run per sweep cluster
@@ -562,32 +497,17 @@ const subtitleHtml =
       // Matches the visual weight of the EvaluationSummary source cards.
       function renderCounts(filtered) {
         if (!countsEl) return;
-        var counts = {
-          CRITICAL: 0,
-          ERROR: 0,
-          WARN: 0,
-          INFO: 0,
-          SUCCESS: 0,
-        };
+        var counts = emptySeverityCounts();
         for (var i = 0; i < filtered.length; i++) {
           var s = normalizeSeverity(filtered[i].severity);
-          if (counts[s] == null) counts[s] = 0;
           counts[s] += 1;
         }
-        var order = ["CRITICAL", "ERROR", "WARN", "INFO", "SUCCESS"];
-        var countClasses = {
-          CRITICAL: "text-rose-300",
-          ERROR: "text-red-400",
-          WARN: "text-amber-400",
-          INFO: "text-slate-300",
-          SUCCESS: "text-emerald-400",
-        };
         var html = "";
-        for (var j = 0; j < order.length; j++) {
-          var key = order[j];
+        for (var j = 0; j < EMISSION_SEVERITIES.length; j++) {
+          var key = EMISSION_SEVERITIES[j];
           var n = counts[key] || 0;
           var isZero = n === 0;
-          var countClass = isZero ? "text-slate-600" : (countClasses[key] || "text-slate-200");
+          var countClass = isZero ? "text-slate-600" : severityTextClass(key);
           html +=
             '<div class="rounded-lg border border-white/5 bg-black/10 px-4 py-3">' +
             '<div class="text-xs font-mono font-medium text-slate-300">' +

@@ -16,6 +16,9 @@
   </div>
 
   <script type="module">
+    import { normalizeSeverity, severityClass } from "../lib/severity.ts";
+    import { sourceLabel } from "../lib/sources.ts";
+
     const root = document.querySelector("[data-recent-findings]");
     if (!root) throw new Error("RecentFindings root not found");
     const listEl = root.querySelector("[data-recent-findings-list]");
@@ -50,37 +53,6 @@
         if (Math.abs(hr) < 24) return rtf.format(hr, "hour");
         const day = Math.round(hr / 24);
         return rtf.format(day, "day");
-      }
-
-      function severityClass(level) {
-        const s = String(level ?? "").toUpperCase();
-        if (s === "CRITICAL") return "text-rose-300 border-rose-500/40 bg-rose-500/15";
-        if (s === "ERROR") return "text-red-400 border-red-500/30 bg-red-500/10";
-        if (s === "WARN" || s === "WARNING") return "text-amber-400 border-amber-500/30 bg-amber-500/10";
-        if (s === "SUCCESS") return "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
-        return "text-slate-300 border-slate-500/30 bg-slate-500/10";
-      }
-
-      function normalizeSeverity(level) {
-        const s = String(level ?? "INFO").toUpperCase();
-        if (s === "WARNING") return "WARN";
-        if (s === "CRITICAL" || s === "SUCCESS") return s;
-        return s;
-      }
-
-      function sourceLabel(source) {
-        if (!source) return null;
-        // Pipeline-eval sources (behavioral — did a run behave correctly?)
-        if (source === "prefect_webhook") return "automation";
-        if (source === "flow_hook") return "crash hook";
-        if (source === "flow_inline") return "pipeline";
-        // Conformance sources (structural — does the repo meet the standards?)
-        if (source === "conformance_deterministic") return "deterministic";
-        if (source === "conformance_llm") return "llm";
-        // Evaluator introspection sources (evaluator's own output / inventory)
-        if (source === "standards_drift") return "drift";
-        if (source === "data_quality") return "data quality";
-        return source;
       }
 
       function collapseConsecutiveInfo(rows) {
