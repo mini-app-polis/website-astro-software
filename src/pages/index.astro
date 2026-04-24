@@ -1,8 +1,16 @@
 ---
 import Base from "../layouts/Base.astro";
 import EvaluationSummary from "../components/EvaluationSummary.astro";
+import { fetchEcosystem } from "../lib/standards";
 
 // Standards version is hydrated client-side from the evaluations API.
+
+// Service count surfaced on the ecosystem card is derived from
+// ecosystem.yaml at build time. Failing to fetch does not block the
+// page — the card falls back to a soft label.
+const ecosystem = await fetchEcosystem();
+const activeServiceCount =
+  (ecosystem?.services ?? []).filter((s) => s.status === "active").length;
 ---
 
 <Base title="Kaiano Levine — Software Engineer">
@@ -36,8 +44,8 @@ import EvaluationSummary from "../components/EvaluationSummary.astro";
             </span>
           </div>
           <p class="text-sm leading-relaxed text-slate-400">
-            Five active services — cogs, a shared library, a FastAPI, and two sites — all
-            running on Railway and Cloudflare Pages. Every service built to the same standards.
+            {activeServiceCount > 0 ? `${activeServiceCount} active services` : "Active services"}
+            {" "}across cogs, shared libraries, APIs, and sites — all built to the same standards.
           </p>
         </div>
         <div class="pt-4 font-mono text-xs text-violet-400 transition-colors group-hover:text-violet-300">

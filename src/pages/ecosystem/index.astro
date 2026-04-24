@@ -1,169 +1,203 @@
 ---
-import Page from "../../layouts/Page.astro";
+/**
+ * /ecosystem — rendered from ecosystem-standards/ecosystem.yaml at build
+ * time. Source of truth for services, descriptions, hosts, and layer
+ * assignment is the `ecosystem.yaml` in the standards repo. Any rename,
+ * retirement, or new service is picked up automatically on the next
+ * build without a code change here.
+ */
 
-type EcosystemService = {
-  id: string;
-  description: string;
-  host: string;
-  repo: string | null;
-  url?: string;
+import Page from "../../layouts/Page.astro";
+import {
+  fetchEcosystem,
+  LAYER_BY_TYPE,
+  LAYER_ORDER,
+  HOST_LABELS,
+  type EcosystemService,
+} from "../../lib/standards";
+
+const ecosystem = await fetchEcosystem();
+const services: EcosystemService[] = (ecosystem?.services ?? []).filter(
+  (s) => s.status === "active",
+);
+
+// GitHub org for repos that don't declare an explicit repo URL. Matches
+// the convention used by every service in the MiniAppPolis ecosystem.
+const GITHUB_ORG = "mini-app-polis";
+
+function repoUrl(svc: EcosystemService): string | null {
+  // Shared-library entries without a host don't need a repo card link
+  // unless they're actually a repo we own. A missing host on a shared
+  // library that IS one of our repos (common-python-utils,
+  // common-typescript-utils) still gets a GitHub link.
+  const repo = svc.repo ?? svc.id;
+  if (!repo) return null;
+  return `https://github.com/${GITHUB_ORG}/${repo}`;
+}
+
+function publicUrl(svc: EcosystemService): string | null {
+  // Published service URLs are inferred from service id where obvious.
+  // Add explicit entries here as more services go live.
+  if (svc.id === "api-kaianolevine-com") return "https://api.kaianolevine.com";
+  if (svc.id === "website-astro-software") return "https://software.kaianolevine.com";
+  if (svc.id === "website-astro-wcs") return "https://wcs.kaianolevine.com";
+  if (svc.id === "deejaytools-com-app") return "https://deejaytools.com";
+  return null;
+}
+
+function hostLabel(host?: string): string {
+  if (!host) return "—";
+  return HOST_LABELS[host] ?? host;
+}
+
+function layerFor(type: string): string {
+  return LAYER_BY_TYPE[type] ?? "Other";
+}
+
+// Group active services by layer, preserving the order in which they
+// appear in ecosystem.yaml within each layer.
+const grouped = new Map<string, EcosystemService[]>();
+for (const svc of services) {
+  const layer = layerFor(svc.type);
+  const arr = grouped.get(layer) ?? [];
+  arr.push(svc);
+  grouped.set(layer, arr);
+}
+
+function sortedLayers(): string[] {
+  const present = [...grouped.keys()];
+  const known = LAYER_ORDER.filter((l) => present.includes(l));
+  const unknown = present.filter((l) => !LAYER_ORDER.includes(l)).sort();
+  return [...known, ...unknown];
+}
+
+// Layer color palette. If a layer appears that isn't in this map, it
+// falls back to the neutral slate theme.
+const LAYER_THEME: Record<
+  string,
+  { text: string; border: string; bg: string }
+> = {
+  Orchestration: {
+    text: "text-violet-400",
+    border: "border-violet-500/30",
+    bg: "bg-violet-500/5",
+  },
+  "Processing (Cogs)": {
+    text: "text-sky-400",
+    border: "border-sky-500/30",
+    bg: "bg-sky-500/5",
+  },
+  "Shared Libraries": {
+    text: "text-emerald-400",
+    border: "border-emerald-500/30",
+    bg: "bg-emerald-500/5",
+  },
+  API: {
+    text: "text-amber-400",
+    border: "border-amber-500/30",
+    bg: "bg-amber-500/5",
+  },
+  Sites: {
+    text: "text-rose-400",
+    border: "border-rose-500/30",
+    bg: "bg-rose-500/5",
+  },
+  Standards: {
+    text: "text-slate-300",
+    border: "border-slate-500/30",
+    bg: "bg-slate-500/5",
+  },
 };
 
-const layers: {
-  label: string;
-  color: string;
-  borderColor: string;
-  bgColor: string;
-  services: EcosystemService[];
-}[] = [
-  {
-    label: "Orchestration",
-    color: "text-violet-400",
-    borderColor: "border-violet-500/30",
-    bgColor: "bg-violet-500/5",
-    services: [
-      {
-        id: "watcher-cog",
-        description: "Polls Google Drive every minute. Fires Prefect flow runs on new files.",
-        host: "Railway",
-        repo: "https://github.com/mini-app-polis/watcher-cog",
-      },
-      {
-        id: "Prefect Cloud",
-        description: "Single orchestration plane. All pipeline scheduling and observability.",
-        host: "Prefect Cloud",
-        repo: null,
-      },
-    ],
-  },
-  {
-    label: "Processing (Cogs)",
-    color: "text-sky-400",
-    borderColor: "border-sky-500/30",
-    bgColor: "bg-sky-500/5",
-    services: [
-      {
-        id: "deejay-cog",
-        description: "DJ set CSV processor. Normalizes and ingests set data into PostgreSQL.",
-        host: "Railway",
-        repo: "https://github.com/mini-app-polis/deejay-cog",
-      },
-      {
-        id: "evaluator-cog",
-        description: "Post-pipeline AI evaluation. Checks conformance against ecosystem standards, writes findings to PostgreSQL.",
-        host: "Railway",
-        repo: "https://github.com/mini-app-polis/evaluator-cog",
-      },
-    ],
-  },
-  {
-    label: "Shared Libraries",
-    color: "text-emerald-400",
-    borderColor: "border-emerald-500/30",
-    bgColor: "bg-emerald-500/5",
-    services: [
-      {
-        id: "common-python-utils",
-        description: "Shared Python utilities: Google API client, LLM client, structured logging, API client. All cogs depend on this.",
-        host: "PyPI (git)",
-        repo: "https://github.com/mini-app-polis/common-python-utils",
-      },
-    ],
-  },
-  {
-    label: "API",
-    color: "text-amber-400",
-    borderColor: "border-amber-500/30",
-    bgColor: "bg-amber-500/5",
-    services: [
-      {
-        id: "api-kaianolevine-com",
-        description: "Primary ecosystem API. DJ sets, catalog, evaluations, feature flags, contact, resume. FastAPI on Railway + PostgreSQL.",
-        host: "Railway",
-        repo: "https://github.com/mini-app-polis/api-kaianolevine-com",
-        url: "https://api.kaianolevine.com",
-      },
-    ],
-  },
-  {
-    label: "Sites",
-    color: "text-rose-400",
-    borderColor: "border-rose-500/30",
-    bgColor: "bg-rose-500/5",
-    services: [
-      {
-        id: "website-astro-software",
-        description: "This site. Software portfolio powered by live data from the API.",
-        host: "Cloudflare Pages",
-        repo: "https://github.com/kaianolevine/website-astro-software",
-        url: "https://kaianolevine.com",
-      },
-      {
-        id: "wcs.kaianolevine.com",
-        description: "West Coast Swing personal site. Astro on Cloudflare Pages.",
-        host: "Cloudflare Pages",
-        repo: null,
-        url: "https://wcs.kaianolevine.com",
-      },
-    ],
-  },
-];
+const NEUTRAL_THEME = {
+  text: "text-slate-300",
+  border: "border-white/10",
+  bg: "bg-white/[0.02]",
+};
+
+function themeFor(layer: string) {
+  return LAYER_THEME[layer] ?? NEUTRAL_THEME;
+}
+
+const fetchError = ecosystem == null;
 ---
 
 <Page
   title="Ecosystem"
-  subtitle="Every service, library, and standard that powers this platform — how they connect, where they run, and what rules they follow."
+  subtitle="Every service and library that powers this platform — how they connect, where they run, and what rules they follow. Sourced from ecosystem-standards at build time."
 >
-  <div class="space-y-8">
-    {layers.map((layer) => (
-      <section class="space-y-3">
-        <h2 class={`font-display text-base tracking-tight ${layer.color}`}>
-          {layer.label}
-        </h2>
-        <div class="grid gap-3 sm:grid-cols-2">
-          {layer.services.map((svc) => (
-            <div
-              class={`rounded-xl border ${layer.borderColor} ${layer.bgColor} p-4 space-y-2`}
-            >
-              <div class="flex items-start justify-between gap-2">
-                <span class="font-mono text-sm font-semibold text-slate-100">
-                  {svc.id}
-                </span>
-                <span class="shrink-0 rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 font-mono text-xs text-slate-400">
-                  {svc.host}
-                </span>
-              </div>
-              <p class="text-xs leading-relaxed text-slate-400">
-                {svc.description}
-              </p>
-              <div class="flex flex-wrap gap-3 pt-1">
-                {svc.repo && (
-                  <a
-                    href={svc.repo}
-                    target="_blank"
-                    rel="noreferrer"
-                    class="font-mono text-xs text-slate-400 transition-colors hover:text-slate-100"
+  {fetchError ? (
+    <p class="text-sm text-slate-500">
+      Unable to load ecosystem inventory — check back shortly or view the
+      <a
+        href="https://github.com/mini-app-polis/ecosystem-standards/blob/main/ecosystem.yaml"
+        target="_blank"
+        rel="noreferrer"
+        class="text-slate-300 underline hover:text-slate-100"
+      >inventory directly</a>.
+    </p>
+  ) : (
+    <div class="space-y-8">
+      {sortedLayers().map((layer) => {
+        const layerServices = grouped.get(layer) ?? [];
+        const theme = themeFor(layer);
+        return (
+          <section class="space-y-3">
+            <h2 class={`font-display text-base tracking-tight ${theme.text}`}>
+              {layer}
+            </h2>
+            <div class="grid gap-3 sm:grid-cols-2">
+              {layerServices.map((svc) => {
+                const repo = repoUrl(svc);
+                const url = publicUrl(svc);
+                return (
+                  <div
+                    class={`rounded-xl border ${theme.border} ${theme.bg} p-4 space-y-2`}
                   >
-                    GitHub ↗
-                  </a>
-                )}
-                {svc.url && (
-                  <a
-                    href={svc.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    class="font-mono text-xs text-slate-400 transition-colors hover:text-slate-100"
-                  >
-                    {svc.url.replace("https://", "")} ↗
-                  </a>
-                )}
-              </div>
+                    <div class="flex items-start justify-between gap-2">
+                      <span class="font-mono text-sm font-semibold text-slate-100">
+                        {svc.id}
+                      </span>
+                      <span class="shrink-0 rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 font-mono text-xs text-slate-400">
+                        {hostLabel(svc.host)}
+                      </span>
+                    </div>
+                    {svc.description && (
+                      <p class="text-xs leading-relaxed text-slate-400">
+                        {svc.description}
+                      </p>
+                    )}
+                    <div class="flex flex-wrap gap-3 pt-1">
+                      {repo && (
+                        <a
+                          href={repo}
+                          target="_blank"
+                          rel="noreferrer"
+                          class="font-mono text-xs text-slate-400 transition-colors hover:text-slate-100"
+                        >
+                          GitHub ↗
+                        </a>
+                      )}
+                      {url && (
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer"
+                          class="font-mono text-xs text-slate-400 transition-colors hover:text-slate-100"
+                        >
+                          {url.replace("https://", "")} ↗
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          ))}
-        </div>
-      </section>
-    ))}
-  </div>
+          </section>
+        );
+      })}
+    </div>
+  )}
 
   <div class="flex justify-end pt-4">
     <a

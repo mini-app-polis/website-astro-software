@@ -151,3 +151,86 @@ export async function fetchDomainFiles(): Promise<DomainFileResult[]> {
 
   return fetched.filter((r): r is DomainFileResult => r !== null);
 }
+
+// ── ecosystem.yaml schema ─────────────────────────────────────
+//
+// Canonical inventory of every service and library in the ecosystem.
+// Service `type:` values are drawn from index.yaml schema.repo_types
+// (pipeline-cog, trigger-cog, api-service, shared-library, static-site,
+// react-app, standards-repo). New type values added to repo_types there
+// should be wired into LAYER_BY_TYPE below; unknown types fall into
+// "Other" so they still render rather than disappearing.
+
+export type ServiceStatus = "active" | "transitioning" | "retired";
+
+export interface EcosystemService {
+  id: string;
+  type: string;
+  status: ServiceStatus;
+  host?: string;
+  language?: string;
+  framework?: string;
+  repo?: string;
+  monorepo?: string;
+  monorepo_path?: string;
+  description?: string;
+}
+
+export interface EcosystemMonorepo {
+  id: string;
+  repo?: string;
+  package_manager?: string;
+  description?: string;
+  apps?: Array<{ service_id: string; path: string }>;
+}
+
+export interface Ecosystem {
+  services?: EcosystemService[];
+  monorepos?: EcosystemMonorepo[];
+}
+
+export async function fetchEcosystem(): Promise<Ecosystem | null> {
+  return fetchYaml<Ecosystem>("ecosystem.yaml");
+}
+
+/**
+ * Human-readable layer name for a service `type:` value. The /ecosystem
+ * page uses this to group services into visual bands. Any type not listed
+ * here renders under "Other" — preferable to silently omitting it, which
+ * would happen if we hardcoded an allowlist.
+ */
+export const LAYER_BY_TYPE: Record<string, string> = {
+  "trigger-cog": "Orchestration",
+  "pipeline-cog": "Processing (Cogs)",
+  "shared-library": "Shared Libraries",
+  "api-service": "API",
+  "static-site": "Sites",
+  "react-app": "Sites",
+  "standards-repo": "Standards",
+};
+
+/**
+ * Stable layer order for display. Layers not in this list appear at the
+ * end in alphabetical order.
+ */
+export const LAYER_ORDER = [
+  "Orchestration",
+  "Processing (Cogs)",
+  "Shared Libraries",
+  "API",
+  "Sites",
+  "Standards",
+  "Other",
+];
+
+/**
+ * Human-readable host label for the inventory card. Keys are the raw
+ * `host:` values from ecosystem.yaml (lowercase). Unknown hosts render
+ * their raw value (title-cased by the caller if needed).
+ */
+export const HOST_LABELS: Record<string, string> = {
+  railway: "Railway",
+  "cloudflare-pages": "Cloudflare Pages",
+  github: "GitHub",
+  "prefect-cloud": "Prefect Cloud",
+};
