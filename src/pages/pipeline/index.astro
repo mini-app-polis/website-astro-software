@@ -187,7 +187,7 @@ const subtitleHtml =
     </section>
   </div>
 
-  <script type="module">
+  <script>
     import {
       normalizeSeverity,
       severityClass,
@@ -195,8 +195,8 @@ const subtitleHtml =
       severityTextClass,
       emptySeverityCounts,
       EMISSION_SEVERITIES,
-    } from "../../lib/severity.ts";
-    import { sourceCategory, sweepCluster } from "../../lib/sources.ts";
+    } from "../../lib/severity";
+    import { sourceCategory, sweepCluster } from "../../lib/sources";
 
     (function () {
       var root = document.querySelector("[data-pipeline-browser]");

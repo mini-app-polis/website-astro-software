@@ -15,9 +15,9 @@
     ))}
   </div>
 
-  <script type="module">
-    import { normalizeSeverity, severityClass } from "../lib/severity.ts";
-    import { sourceLabel } from "../lib/sources.ts";
+  <script>
+    import { normalizeSeverity, severityClass } from "../lib/severity";
+    import { sourceLabel } from "../lib/sources";
 
     const root = document.querySelector("[data-recent-findings]");
     if (!root) throw new Error("RecentFindings root not found");

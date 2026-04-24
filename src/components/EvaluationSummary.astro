@@ -59,19 +59,19 @@
     Evaluated by Claude · <span data-eval-standards-version>Standards v—</span>
   </p>
 
-  <script type="module">
+  <script>
     import {
       normalizeSeverity,
       countSeverities,
       formatCounts,
       emptySeverityCounts,
-    } from "../lib/severity.ts";
+    } from "../lib/severity";
     import {
       BUCKET_LABELS,
       sourceCategory,
       sourceToBucket,
       sweepCluster,
-    } from "../lib/sources.ts";
+    } from "../lib/sources";
 
     const root = document.querySelector("[data-eval-summary]");
     if (!root) throw new Error("EvaluationSummary root not found");
