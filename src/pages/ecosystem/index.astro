@@ -1,7 +1,7 @@
 ---
 /**
  * /ecosystem — rendered from ecosystem-standards/ecosystem.yaml at build
- * time. Source of truth for services, descriptions, hosts, and layer
+ * time. Source of truth for services, hosts, and layer
  * assignment is the `ecosystem.yaml` in the standards repo. Any rename,
  * retirement, or new service is picked up automatically on the next
  * build without a code change here.
@@ -162,11 +162,6 @@ const fetchError = ecosystem == null;
                         {hostLabel(svc.host)}
                       </span>
                     </div>
-                    {svc.description && (
-                      <p class="text-xs leading-relaxed text-slate-400">
-                        {svc.description}
-                      </p>
-                    )}
                     <div class="flex flex-wrap gap-3 pt-1">
                       {repo && (
                         <a

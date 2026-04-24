@@ -36,11 +36,13 @@ function labelFor(key: string, description?: string): string {
   return base || description || key;
 }
 
-const domainFiles = domainResults.map((d) => ({
-  key: d.key,
-  label: labelFor(d.key, d.description),
-  rules: d.rules,
-}));
+const domainFiles = domainResults
+  .map((d) => ({
+    key: d.key,
+    label: labelFor(d.key, d.description),
+    rules: d.rules,
+  }))
+  .sort((a, b) => a.label.localeCompare(b.label));
 
 const totalRules = domainFiles.reduce((sum, d) => sum + d.rules.length, 0);
 const checkableRules = domainFiles.reduce(
