@@ -1,7 +1,9 @@
 ---
 import Page from "../../layouts/Page.astro";
 
-const turnstileSiteKey = "0x4AAAAAACXUS6RYhJCvPzZg";
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
+const apiBase = import.meta.env.PUBLIC_API_URL ?? "";
+const resumeHref = apiBase ? `${apiBase.replace(/\/$/, "")}/v1/resume` : "#";
 ---
 
 <Page title="Resume" subtitle="Verified access via Cloudflare Turnstile.">
@@ -25,7 +27,7 @@ const turnstileSiteKey = "0x4AAAAAACXUS6RYhJCvPzZg";
         </p>
         <a
           id="resumeLink"
-          href="https://api.kaianolevine.com/v1/resume"
+          href={resumeHref}
           target="_blank"
           rel="noreferrer"
           class="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 font-mono text-sm font-semibold text-black transition-opacity hover:opacity-90"
@@ -53,4 +55,3 @@ const turnstileSiteKey = "0x4AAAAAACXUS6RYhJCvPzZg";
     window.onTurnstileVerified = onTurnstileVerified;
   </script>
 </Page>
-

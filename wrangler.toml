@@ -4,3 +4,5 @@ pages_build_output_dir = "dist"
 
 [vars]
 PUBLIC_API_URL = "https://api.kaianolevine.com"
+PUBLIC_SITE_URL = "https://software.kaianolevine.com"
+PUBLIC_TURNSTILE_SITE_KEY = "0x4AAAAAACXUS6RYhJCvPzZg"

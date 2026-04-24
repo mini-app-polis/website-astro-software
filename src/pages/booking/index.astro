@@ -1,7 +1,7 @@
 ---
 import Page from "../../layouts/Page.astro";
 
-const turnstileSiteKey = "0x4AAAAAACXUS6RYhJCvPzZg";
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 ---
 
 <Page title="Booking" subtitle="Verified access to prevent spam.">
@@ -53,4 +53,3 @@ const turnstileSiteKey = "0x4AAAAAACXUS6RYhJCvPzZg";
     window.onTurnstileVerified = onTurnstileVerified;
   </script>
 </Page>
-
