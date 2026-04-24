@@ -1,3 +1,10 @@
+# [1.23.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.22.2...v1.23.0) (2026-04-24)
+
+
+### Features
+
+* sort standards domains alphabetically and drop service descriptions from ecosystem page ([9eb8ea9](https://github.com/mini-app-polis/website-astro-software/commit/9eb8ea9778cf20866ea6da39a607b538420743eb))
+
 ## [1.22.2](https://github.com/mini-app-polis/website-astro-software/compare/v1.22.1...v1.22.2) (2026-04-24)
 
 
