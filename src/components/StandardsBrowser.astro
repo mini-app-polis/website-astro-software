@@ -2,160 +2,68 @@
 /**
  * StandardsBrowser
  *
- * Fetches the ecosystem-standards rules from GitHub at build time and renders
- * a browsable view grouped by domain. Each rule shows its ID, title, severity,
- * status, and description.
+ * Fetches the ecosystem-standards rules at build time and renders a
+ * browsable view grouped by domain. Each rule shows its ID, title,
+ * severity, status, and description. All fetches are build-time (SSG) —
+ * no client-side API calls.
  *
- * All fetches are build-time (SSG). No client-side API calls.
+ * Source of truth: index.yaml (domain discovery + labels via description)
+ * and standards/*.yaml (rules). See src/lib/standards.ts.
  */
-// Fetch ecosystem-standards YAML directly from raw.githubusercontent.com,
-// not the api.github.com Contents endpoint. The Contents endpoint is
-// rate-limited to 60 requests/hour per IP for unauthenticated calls -
-// Cloudflare Pages build containers share IPs and blow through the quota,
-// which causes the "Unable to load standards" fallback to render.
-// raw.githubusercontent.com serves raw file bytes with no practical
-// rate limit for public repos.
-const RAW_BASE =
-  "https://raw.githubusercontent.com/mini-app-polis/ecosystem-standards/main";
 
-// Rule shape from the standards YAML files
-interface Rule {
-  id: string;
-  title: string;
-  status: "requirement" | "convention" | "advisory" | "idea" | "gap";
-  dimension?: string;
-  severity?: "ERROR" | "WARN" | "INFO";
-  description: string;
-  checkable?: boolean;
-  check_notes?: string;
-  origin?: string;
+import { fetchIndex, fetchDomainFiles, type Rule } from "../lib/standards";
+
+const [index, domainResults] = await Promise.all([
+  fetchIndex(),
+  fetchDomainFiles(),
+]);
+
+const fetchError = index == null || domainResults.length === 0;
+
+// Build the per-domain display list. We use the description from index.yaml
+// as the friendly label where possible; if absent, fall back to the raw key.
+// This keeps new domain files correctly labeled without code changes here —
+// rename a description in index.yaml and the site picks it up on next build.
+function labelFor(key: string, description?: string): string {
+  // index.yaml descriptions are sentences (e.g. "Standards for all Python
+  // services..."); we want a short label. Prefer a "title case of key"
+  // derived from the filename, which matches the domain key convention.
+  const base = key
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((w) => w[0].toUpperCase() + w.slice(1))
+    .join(" ");
+  return base || description || key;
 }
 
-interface DomainFile {
-  domain: string;
-  standards: Rule[];
-  rules?: Rule[];
-}
+const domainFiles = domainResults.map((d) => ({
+  key: d.key,
+  label: labelFor(d.key, d.description),
+  rules: d.rules,
+}));
 
-// index.yaml entry shape. Standards domain files carry `rule_prefix`;
-// non-domain files (definitions-of-done, ecosystem) omit it. We filter
-// on the structural signal rather than on pathname substrings.
-interface IndexFileEntry {
-  file: string;
-  domain?: string;
-  description?: string;
-  rule_prefix?: string;
-}
+const totalRules = domainFiles.reduce((sum, d) => sum + d.rules.length, 0);
+const checkableRules = domainFiles.reduce(
+  (sum, d) => sum + d.rules.filter((r) => r.checkable === true).length,
+  0,
+);
 
-interface IndexFile {
-  files?: IndexFileEntry[];
-}
-
-// Friendly display names for domain file keys
-const DOMAIN_LABELS: Record<string, string> = {
-  principles: "Principles",
-  python: "Python",
-  testing: "Testing",
-  documentation: "Documentation",
-  api: "API",
-  pipeline: "Pipeline",
-  frontend: "Frontend",
-  delivery: "Delivery",
-  evaluation: "Evaluation",
-  "cross-stack": "Cross-Stack",
-};
-
-let yamlLoad: ((input: string) => unknown) | null = null;
-
-async function parseYamlText<T>(yamlText: string): Promise<T> {
-  if (!yamlLoad) {
-    const yamlModule = await import("js-yaml");
-    yamlLoad = yamlModule.load as (input: string) => unknown;
-  }
-  return yamlLoad(yamlText) as T;
-}
-
-async function fetchYamlText(path: string): Promise<string | null> {
-  try {
-    const res = await fetch(`${RAW_BASE}/${path}`);
-    if (!res.ok) return null;
-    return await res.text();
-  } catch {
-    return null;
-  }
-}
-
-// Fetch index + domain files at build time
-let domainFiles: { label: string; key: string; rules: Rule[] }[] = [];
-let totalRules = 0;
-let checkableRules = 0;
-let fetchError = false;
-
-try {
-  const indexText = await fetchYamlText("index.yaml");
-  if (indexText) {
-    const index = await parseYamlText<IndexFile>(indexText);
-
-    // Standards domain files carry `rule_prefix`. Non-domain files
-    // (definitions-of-done, ecosystem) omit it. Filter structurally -
-    // not by pathname - so future standards files are picked up
-    // automatically and non-domain files are excluded robustly.
-    const domainEntries = (index.files ?? []).filter(
-      (entry): entry is IndexFileEntry =>
-        typeof entry === "object" &&
-        entry !== null &&
-        typeof entry.file === "string" &&
-        typeof entry.rule_prefix === "string",
-    );
-
-    const fetched = await Promise.all(
-      domainEntries.map(async (entry) => {
-        const yamlText = await fetchYamlText(entry.file);
-        if (!yamlText) return null;
-
-        // Derive the key from the filename: `standards/python.yaml` -> `python`.
-        const filename = entry.file.split("/").pop() ?? entry.file;
-        const key = filename.replace(/\.ya?ml$/, "");
-
-        try {
-          const data = await parseYamlText<DomainFile>(yamlText);
-          const rules = Array.isArray(data?.standards)
-            ? data.standards
-            : Array.isArray(data?.rules)
-              ? data.rules
-              : [];
-          return { key, rules };
-        } catch (error) {
-          console.error(`Failed to parse ${entry.file} from ${RAW_BASE}`, error);
-          return null;
-        }
-      }),
-    );
-
-    for (const result of fetched) {
-      if (!result) continue;
-      const label = DOMAIN_LABELS[result.key] ?? result.key;
-      domainFiles.push({ label, key: result.key, rules: result.rules });
-      totalRules += result.rules.length;
-      checkableRules += result.rules.filter((r) => r.checkable === true).length;
-    }
-  } else {
-    fetchError = true;
-  }
-} catch {
-  fetchError = true;
-}
-
+// Severity class mapping. Rule-level severities are ERROR | WARN | INFO
+// per index.yaml schema.rule_fields.severity.allowed_values. CRITICAL and
+// SUCCESS are emission-only and never appear on rule definitions, so we
+// don't need them here — but we handle them defensively in case a rule
+// somewhere is mislabeled.
 function severityClass(severity?: string): string {
+  if (severity === "CRITICAL") return "text-rose-300 border-rose-500/40 bg-rose-500/15";
   if (severity === "ERROR") return "text-red-400 border-red-500/30 bg-red-500/10";
   if (severity === "WARN") return "text-amber-400 border-amber-500/30 bg-amber-500/10";
+  if (severity === "SUCCESS") return "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
   return "text-slate-300 border-slate-500/30 bg-slate-500/10";
 }
 
 function statusClass(status?: string): string {
   if (status === "requirement") return "text-accent border-accent/30 bg-accent/10";
   if (status === "convention") return "text-sky-400 border-sky-500/30 bg-sky-500/10";
-  if (status === "advisory") return "text-slate-300 border-white/10 bg-white/5";
   if (status === "gap") return "text-rose-400 border-rose-500/30 bg-rose-500/10";
   return "text-slate-500 border-white/10 bg-white/5";
 }
@@ -216,7 +124,7 @@ function statusClass(status?: string): string {
         </summary>
 
         <div class="divide-y divide-white/5 border-t border-white/5">
-          {domain.rules.map((rule) => (
+          {domain.rules.map((rule: Rule) => (
             <div class="space-y-1.5 px-4 py-3">
               <div class="flex flex-wrap items-center gap-2">
                 <span class="font-mono text-xs text-slate-500">{rule.id}</span>
