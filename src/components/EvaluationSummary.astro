@@ -1,4 +1,13 @@
 ---
+import { fetchVersion } from "../lib/standards";
+
+// Build-time render of the current ecosystem-standards repo version.
+// This is the version of the spec these checks are evaluating against,
+// drawn from the repo itself rather than from any per-finding
+// `standards_version` field. The per-finding value still appears on
+// the pipeline details page, where a mismatch with this repo version
+// is itself diagnostic information.
+const standardsVersion = await fetchVersion();
 ---
 
 <section
@@ -56,7 +65,7 @@
   </div>
 
   <p class="mt-4 text-xs text-slate-500" data-eval-footer>
-    Evaluated by Claude · <span data-eval-standards-version>Standards v—</span>
+    Evaluated by Claude · Standards {standardsVersion ? `v${standardsVersion}` : "v—"}
   </p>
 
   <script>
@@ -456,13 +465,6 @@
           for (const f of findings) {
             const bucket = sourceToBucket(f?.source);
             findingsByBucket[bucket].push(f);
-          }
-
-          // Standards version footer
-          const footerVersionEl = root.querySelector("[data-eval-standards-version]");
-          if (footerVersionEl) {
-            const sv = findings.find((f) => f?.standards_version)?.standards_version;
-            if (sv) footerVersionEl.textContent = `Standards v${sv}`;
           }
 
           populateSourceTabs();

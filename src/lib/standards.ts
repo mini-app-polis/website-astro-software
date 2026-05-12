@@ -56,6 +56,32 @@ export async function fetchYaml<T>(path: string): Promise<T | null> {
   }
 }
 
+/**
+ * Fetch the current ecosystem-standards repo version from its package.json.
+ *
+ * This is the authoritative answer to "what version is the standards repo at
+ * right now?" — a property of the repo itself, distinct from any per-finding
+ * `standards_version` value pinned at evaluation time. The homepage badge and
+ * the EvaluationSummary footer use this so that drift in upstream evaluators
+ * (a cog emitting a stale pinned version) cannot make the site misreport the
+ * current repo state.
+ *
+ * Returns the `version` string from package.json, or `null` if the fetch or
+ * JSON parse fails. Callers should fall back gracefully rather than blocking
+ * the build on a transient GitHub hiccup.
+ */
+export async function fetchVersion(): Promise<string | null> {
+  try {
+    const res = await fetch(`${STANDARDS_RAW_BASE}/package.json`);
+    if (!res.ok) return null;
+    const pkg = (await res.json()) as { version?: unknown };
+    return typeof pkg.version === "string" ? pkg.version : null;
+  } catch (error) {
+    console.error(`Failed to fetch package.json from ${STANDARDS_RAW_BASE}`, error);
+    return null;
+  }
+}
+
 // ── index.yaml schema ─────────────────────────────────────────
 
 export interface IndexFileEntry {
