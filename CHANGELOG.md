@@ -1,3 +1,10 @@
+## [1.23.2](https://github.com/mini-app-polis/website-astro-software/compare/v1.23.1...v1.23.2) (2026-05-12)
+
+
+### Bug Fixes
+
+* **standards:** resolve homepage standards version from repo, not findings ([777623c](https://github.com/mini-app-polis/website-astro-software/commit/777623cb26eadd6456a57c69d27e9b367a831ae4))
+
 ## [1.23.1](https://github.com/mini-app-polis/website-astro-software/compare/v1.23.0...v1.23.1) (2026-04-24)
 
 
