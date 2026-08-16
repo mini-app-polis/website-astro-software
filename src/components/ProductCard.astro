@@ -1,0 +1,99 @@
+---
+/**
+ * ProductCard — a single deployed, publicly-visitable product.
+ *
+ * Distinct from ProjectCard (which points at repos). This card is for
+ * things a visitor can click and actually use right now, so the domain
+ * is the primary affordance and the link always opens the live site.
+ *
+ * `stack` entries beginning with "TODO" are filtered out at render time.
+ * That keeps unfilled placeholders in source visible to the author while
+ * never shipping them to a live page.
+ */
+
+export type ProductCardProps = {
+  name: string;
+  domain: string;
+  url: string;
+  tagline: string;
+  description: string;
+  role?: string;
+  stack?: string[];
+  status?: string;
+  accent?: "violet" | "emerald" | "amber" | "rose" | "sky";
+};
+
+const {
+  name,
+  domain,
+  url,
+  tagline,
+  description,
+  role,
+  stack = [],
+  status = "Live",
+  accent = "rose",
+} = Astro.props as ProductCardProps;
+
+const THEME = {
+  violet: { border: "border-violet-500/20", hover: "hover:border-violet-500/40", bg: "bg-violet-500/5", text: "text-violet-400", hoverText: "group-hover:text-violet-300" },
+  emerald: { border: "border-emerald-500/20", hover: "hover:border-emerald-500/40", bg: "bg-emerald-500/5", text: "text-emerald-400", hoverText: "group-hover:text-emerald-300" },
+  amber: { border: "border-amber-500/20", hover: "hover:border-amber-500/40", bg: "bg-amber-500/5", text: "text-amber-400", hoverText: "group-hover:text-amber-300" },
+  rose: { border: "border-rose-500/20", hover: "hover:border-rose-500/40", bg: "bg-rose-500/5", text: "text-rose-400", hoverText: "group-hover:text-rose-300" },
+  sky: { border: "border-sky-500/20", hover: "hover:border-sky-500/40", bg: "bg-sky-500/5", text: "text-sky-400", hoverText: "group-hover:text-sky-300" },
+} as const;
+
+const theme = THEME[accent] ?? THEME.rose;
+
+const isPlaceholder = (value: string) => /^todo\b/i.test(value.trim());
+const visibleStack = stack.filter((s) => !isPlaceholder(s));
+const visibleRole = role && !isPlaceholder(role) ? role : null;
+---
+
+<article
+  class={`group flex h-full flex-col rounded-2xl border ${theme.border} ${theme.bg} p-6 shadow-soft transition-colors ${theme.hover}`}
+>
+  <div class="flex-1 space-y-3">
+    <div class="flex items-start justify-between gap-3">
+      <div class="space-y-1">
+        <h2 class="font-display text-xl tracking-tight text-slate-100">{name}</h2>
+        <p class={`font-mono text-xs ${theme.text}`}>{tagline}</p>
+      </div>
+      <span class="shrink-0 rounded-full border border-white/10 bg-black/20 px-3 py-1 font-mono text-xs text-slate-400">
+        {status}
+      </span>
+    </div>
+
+    <p class="text-sm leading-relaxed text-slate-300">{description}</p>
+
+    {visibleRole ? (
+      <p class="text-xs text-slate-500">
+        <span class="font-mono uppercase tracking-wide">Role</span>
+        <span class="mx-2 text-slate-600">·</span>
+        <span class="text-slate-400">{visibleRole}</span>
+      </p>
+    ) : null}
+
+    {visibleStack.length > 0 ? (
+      <ul class="flex flex-wrap gap-2 pt-1">
+        {visibleStack.map((item) => (
+          <li class="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-0.5 font-mono text-xs text-slate-400">
+            {item}
+          </li>
+        ))}
+      </ul>
+    ) : null}
+  </div>
+
+  <div class="mt-5 border-t border-white/5 pt-4">
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      class={`inline-flex items-center gap-2 font-mono text-sm text-slate-300 transition-colors hover:text-slate-100 ${theme.hoverText}`}
+    >
+      {domain}
+      <span aria-hidden="true">↗</span>
+    </a>
+  </div>
+</article>

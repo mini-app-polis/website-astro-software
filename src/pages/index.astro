@@ -35,7 +35,29 @@ const activeServiceCount =
       </div>
     </div>
 
-    <div class="grid gap-5 md:grid-cols-3 items-stretch">
+    <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-4 items-stretch">
+      <!-- Products -->
+      <a
+        href="/products"
+        class="group flex flex-col justify-between rounded-2xl border border-rose-500/20 bg-rose-500/5 p-5 transition-colors hover:border-rose-500/40"
+      >
+        <div class="space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-display text-base tracking-tight text-slate-100">Products</span>
+            <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-xs text-slate-400">
+              Live
+            </span>
+          </div>
+          <p class="text-sm leading-relaxed text-slate-400">
+            Deployed software you can visit right now — a HubSpot automation product and
+            three sites serving the West Coast Swing community.
+          </p>
+        </div>
+        <div class="pt-4 font-mono text-xs text-rose-400 transition-colors group-hover:text-rose-300">
+          See what’s live ↗
+        </div>
+      </a>
+
       <!-- Ecosystem -->
       <a
         href="/ecosystem"

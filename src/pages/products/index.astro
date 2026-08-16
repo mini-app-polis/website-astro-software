@@ -1,0 +1,92 @@
+---
+/**
+ * /products — deployed, publicly-visitable products.
+ *
+ * Deliberately hardcoded rather than sourced from ecosystem.yaml: this
+ * page includes work that lives outside the MiniAppPolis ecosystem
+ * (client and side-project sites with their own repos and hosting), so
+ * the standards repo is not the right source of truth for it. Anything
+ * that IS in ecosystem.yaml is still listed on /ecosystem — this page is
+ * the visitor-facing cut, not the service inventory.
+ *
+ * To add a product: append to PRODUCTS. `stack` and `role` values
+ * beginning with "TODO" are hidden at render time by ProductCard, so an
+ * unfinished entry is safe to commit and deploy.
+ */
+
+import Page from "../../layouts/Page.astro";
+import ProductCard from "../../components/ProductCard.astro";
+import type { ProductCardProps } from "../../components/ProductCard.astro";
+
+const PRODUCTS: ProductCardProps[] = [
+  {
+    name: "Torch",
+    domain: "torch.emberlabshq.app",
+    url: "https://torch.emberlabshq.app/",
+    tagline: "Ghost-rep protection for HubSpot",
+    description:
+      "A HubSpot-native automation that solves the ghost rep problem: when a sales rep is deactivated, their contacts, deals, companies, and tickets sit unowned and prospects stop hearing back. Torch detects the deactivation within five minutes and redistributes every record — round-robin or direct assignment, list-based exclusions, and a full audit trail on each reassignment. Setup takes under five minutes and runs continuously from there.",
+    role: "TODO: your role — e.g. Product, design, build, deploy",
+    stack: ["TODO: stack tags — e.g. React", "TODO: HubSpot API"],
+    status: "Live",
+    accent: "amber",
+  },
+  {
+    name: "WCS — Kaiano Levine",
+    domain: "wcs.kaianolevine.com",
+    url: "https://wcs.kaianolevine.com",
+    tagline: "DJ sets, live music data, and lesson booking",
+    description:
+      "The public front door for my West Coast Swing work as DJ Marvel and an instructor in the Twin Cities. Full DJ set history, live play statistics, event and venue information, music submission tools, and private lesson booking. The music views are not static — they query api.kaianolevine.com live, backed by a Prefect ingestion pipeline that normalizes and loads set data into PostgreSQL after every event.",
+    role: "Design, build, deploy, and the data pipeline behind it",
+    stack: ["Astro", "Tailwind", "Cloudflare Pages", "FastAPI", "PostgreSQL", "Prefect"],
+    status: "Live",
+    accent: "violet",
+  },
+  {
+    name: "Dance Geek Productions",
+    domain: "dancegeekproductions.art",
+    url: "https://dancegeekproductions.art",
+    tagline: "Event production company home base",
+    description:
+      "The umbrella site for a West Coast Swing event production company whose stated mission is to build the most unique WCS events and experiences. It is the routing layer for the company's portfolio — Swingtacular: The Galactic Open, the Capital Swing Convention, JnJ Training Ground, and the BAMEO brand — sending dancers from a single entry point to the right event's details and registration.",
+    role: "TODO: your role — e.g. Design, build, deploy",
+    stack: ["TODO: stack tags"],
+    status: "Live",
+    accent: "rose",
+  },
+  {
+    name: "Swingtacular: The Galactic Open",
+    domain: "swingtacular.art",
+    url: "https://swingtacular.art",
+    tagline: "Convention site for 1,000+ dancers",
+    description:
+      "The official event site for Swingtacular: The Galactic Open in Burlingame, California. It carries the full convention experience for roughly a thousand attendees: leveled workshops taught without patterns, WSDC-registered Jack-and-Jill, routine, and Pro/Am competitions, themed Geek Night and Space Gala evenings, the signature Galactic Show, and the Westie Welcome program that gives first-time convention-goers a free pass.",
+    role: "TODO: your role — e.g. Design, build, deploy",
+    stack: ["TODO: stack tags"],
+    status: "Live",
+    accent: "sky",
+  },
+];
+---
+
+<Page
+  title="Products"
+  subtitle="Deployed software you can visit right now. Each one is live in production and serving real users — click through to any of them."
+>
+  <div class="grid gap-5 md:grid-cols-2 items-stretch">
+    {PRODUCTS.map((product) => <ProductCard {...product} />)}
+  </div>
+
+  <div class="flex flex-wrap items-center justify-between gap-4 pt-8">
+    <p class="text-sm text-slate-500">
+      Looking for the services and libraries behind these?
+    </p>
+    <a
+      href="/ecosystem"
+      class="inline-flex items-center gap-2 font-mono text-sm text-slate-400 transition-colors hover:text-slate-100"
+    >
+      View the ecosystem ↗
+    </a>
+  </div>
+</Page>
