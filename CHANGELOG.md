@@ -1,3 +1,10 @@
+## [1.24.2](https://github.com/mini-app-polis/website-astro-software/compare/v1.24.1...v1.24.2) (2026-08-16)
+
+
+### Bug Fixes
+
+* adding products page ([7f7b016](https://github.com/mini-app-polis/website-astro-software/commit/7f7b016fe42baf6ccd63d9234ed26b2d33d8f117))
+
 ## [1.24.1](https://github.com/mini-app-polis/website-astro-software/compare/v1.24.0...v1.24.1) (2026-08-16)
 
 
