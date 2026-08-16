@@ -20,18 +20,6 @@ import type { ProductCardProps } from "../../components/ProductCard.astro";
 
 const PRODUCTS: ProductCardProps[] = [
   {
-    name: "Swingtacular: The Galactic Open",
-    domain: "swingtacular.art",
-    url: "https://swingtacular.art",
-    tagline: "Convention site for 1,000+ dancers",
-    description:
-      "The official event site for Swingtacular: The Galactic Open in Burlingame, California. It carries the full convention experience for roughly a thousand attendees: leveled workshops taught without patterns, WSDC-registered Jack-and-Jill, routine, and Pro/Am competitions, themed Geek Night and Space Gala evenings, the signature Galactic Show, and the Westie Welcome program that gives first-time convention-goers a free pass.",
-    role: "TODO: your role — e.g. Design, build, deploy",
-    stack: ["TODO: stack tags"],
-    status: "Live",
-    accent: "sky",
-  },
-  {
     name: "WCS — Kaiano Levine",
     domain: "wcs.kaianolevine.com",
     url: "https://wcs.kaianolevine.com",
@@ -42,6 +30,30 @@ const PRODUCTS: ProductCardProps[] = [
     stack: ["Astro", "Tailwind", "Cloudflare Pages", "FastAPI", "PostgreSQL", "Prefect"],
     status: "Live",
     accent: "violet",
+  },
+  {
+    name: "DeeJay Tools",
+    domain: "deejaytools.com",
+    url: "https://deejaytools.com",
+    tagline: "Routine management for WCS events",
+    description:
+      "A full-stack platform for running the routine side of a West Coast Swing event. Event and session setup, floor trial scheduling, a live check-in queue, slot assignment, and partner and song management — the operational work that event staff otherwise coordinate by spreadsheet and clipboard. Authenticated app backed by its own API and database, shipped from a pnpm monorepo.",
+    role: "Design, build, deploy — app and API",
+    stack: ["React", "Vite", "Tailwind", "shadcn/ui", "Hono", "PostgreSQL", "Clerk", "Cloudflare Pages"],
+    status: "Live",
+    accent: "emerald",
+  },
+  {
+    name: "Swingtacular: The Galactic Open",
+    domain: "swingtacular.art",
+    url: "https://swingtacular.art",
+    tagline: "Convention site for 1,000+ dancers",
+    description:
+      "The official event site for Swingtacular: The Galactic Open in Burlingame, California. It carries the full convention experience for roughly a thousand attendees: leveled workshops taught without patterns, WSDC-registered Jack-and-Jill, routine, and Pro/Am competitions, themed Geek Night and Space Gala evenings, the signature Galactic Show, and the Westie Welcome program that gives first-time convention-goers a free pass.",
+    role: "TODO: your role — e.g. Design, build, deploy",
+    stack: ["TODO: stack tags"],
+    status: "Live",
+    accent: "sky",
   },
   {
     name: "Dance Geek Productions",
