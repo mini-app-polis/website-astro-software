@@ -1,6 +1,25 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Tailwind 4 is configured in CSS rather than in a JS config file. These
+   are the same values tailwind.config.mjs declared under theme.extend,
+   moved into the namespaces v4 reads: --color-* feeds bg-/text-/border-,
+   --font-* feeds font-, --shadow-* feeds shadow-. */
+@theme {
+  --color-accent: #ffb020;
+  --color-surface: #0f121a;
+  --color-surface2: #0b0c0f;
+
+  --font-display: "Oxanium", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --shadow-soft: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* Replaces darkMode: "class". No `dark:` utility is used in this site
+   today, but Base.astro puts class="dark" on <html>, so keeping the
+   variant means adding one later behaves as it always would have. */
+@custom-variant dark (&:where(.dark, .dark *));
 
 html {
   color-scheme: dark;

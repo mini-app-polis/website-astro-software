@@ -23,3 +23,6 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+# Local wrangler/miniflare state, written by the build. Machine-local
+# and never part of a deploy.
+.wrangler/
