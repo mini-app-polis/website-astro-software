@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/mini-app-polis/website-astro-software/compare/v2.0.0...v2.0.1) (2026-09-04)
+
+
+### Bug Fixes
+
+* **deps:** bump js-yaml from 4.3.2 to 5.4.1 ([dc6fe58](https://github.com/mini-app-polis/website-astro-software/commit/dc6fe582ef35180cf80456a00fe2e3a40589997a))
+
 # [2.0.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.26.1...v2.0.0) (2026-09-04)
 
 
