@@ -1,3 +1,54 @@
+# [2.0.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.26.1...v2.0.0) (2026-09-04)
+
+
+* fix(deps)!: upgrade to astro 7 and clear 11 security advisories ([b4ad2b5](https://github.com/mini-app-polis/website-astro-software/commit/b4ad2b5a0e33fa24bdaed44bd8f503f2efc3fd99)), closes [#ffb020](https://github.com/mini-app-polis/website-astro-software/issues/ffb020) [#0f121a](https://github.com/mini-app-polis/website-astro-software/issues/0f121a) [#0b0c0f](https://github.com/mini-app-polis/website-astro-software/issues/0b0c0f)
+
+
+### BREAKING CHANGES
+
+* deploys move from Cloudflare Pages to Cloudflare
+Workers. The Cloudflare side of that cutover is not in this commit.
+
+npm audit reported 11 vulnerabilities, 7 high. These are not
+dev-server issues: on a hybrid site behind the Cloudflare adapter the
+live ones include SSRF via the /_image endpoint, reflected XSS via
+server islands, Host-header SSRF in the prerendered error page fetch,
+and authentication bypass via double URL encoding. audit now reports
+zero.
+
+There was no cheaper route. astro is a direct dependency, so the
+overrides trick used elsewhere in the fleet does not apply, and the
+lowest astro that clears the highs is 6.4.6. @astrojs/tailwind cannot
+follow it — 6.0.2 is its last release and it peers on astro ^3 || ^4
+|| ^5 — so Tailwind 4 comes along whether or not it was wanted.
+
+  astro                4.16.19 -> 7.3.1
+  @astrojs/cloudflare  11.2.0  -> 14.3.0
+  @astrojs/tailwind    removed, replaced by @tailwindcss/vite
+  tailwindcss          3 -> 4
+  autoprefixer, postcss  removed (Tailwind 4's plugin does both)
+
+Four things changed shape:
+
+output "hybrid" is gone in astro 5. "static" with an adapter is its
+exact replacement — pages prerender by default, `prerender = false`
+opts out. No page here opts out, so the built output is unchanged.
+
+Tailwind is configured in CSS now. tailwind.config.mjs is deleted and
+its theme.extend values move into @theme in global.css, under the
+namespaces v4 reads. darkMode: "class" becomes @custom-variant. No
+`dark:` utility is used today, but Base.astro sets class="dark", so
+the variant is kept for parity.
+
+wrangler.toml becomes a Workers config. @astrojs/cloudflare v11 was
+the last release supporting Pages; v12 onward targets Workers with
+static assets, and the /_image SSRF is only fixed in v12.6.6+. So no
+version combination clears this audit and stays on Pages. `main` is
+deliberately not declared: the adapter generates the worker entry at
+build time and wrangler validates the field before that exists.
+
+Verified: build produces all 9 pages, audit is clean, and the
+
 ## [1.26.1](https://github.com/mini-app-polis/website-astro-software/compare/v1.26.0...v1.26.1) (2026-09-04)
 
 
