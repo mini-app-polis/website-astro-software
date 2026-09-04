@@ -1,3 +1,10 @@
+# [1.26.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.25.0...v1.26.0) (2026-09-04)
+
+
+### Features
+
+* **deps:** automate dependency updates ([5edd131](https://github.com/mini-app-polis/website-astro-software/commit/5edd1319fbcce8583e31d0172756d2123ef00087))
+
 # [1.25.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.24.2...v1.25.0) (2026-09-04)
 
 
