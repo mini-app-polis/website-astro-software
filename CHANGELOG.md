@@ -1,3 +1,10 @@
+## [1.26.1](https://github.com/mini-app-polis/website-astro-software/compare/v1.26.0...v1.26.1) (2026-09-04)
+
+
+### Bug Fixes
+
+* **git:** never three-way merge a lockfile ([2b7e0ac](https://github.com/mini-app-polis/website-astro-software/commit/2b7e0acf0fad09f08081fee828d09b849f790ec5))
+
 # [1.26.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.25.0...v1.26.0) (2026-09-04)
 
 
