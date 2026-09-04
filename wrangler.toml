@@ -1,19 +1,6 @@
-# Cloudflare Workers, not Pages.
-#
-# @astrojs/cloudflare v11 was the last release that supported Pages;
-# v12 onward targets Workers with static assets. Since the /_image SSRF
-# advisory is only fixed in v12.6.6+, and the astro advisories need
-# astro >= 6.4.6 which requires adapter v13+, there is no version
-# combination that clears the audit and stays on Pages.
 name = "website-astro-software"
-compatibility_date = "2025-09-01"
-compatibility_flags = ["nodejs_als"]
-
-# The adapter generates the worker entry and its assets binding at
-# build time; declaring `main` here would be validated before the
-# build has produced it.
-[assets]
-directory = "./dist"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "dist"
 
 [vars]
 PUBLIC_API_URL = "https://api.kaianolevine.com"

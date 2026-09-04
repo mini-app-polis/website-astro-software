@@ -18,7 +18,6 @@
   },
   "homepage": "https://github.com/mini-app-polis/website-astro-software#readme",
   "dependencies": {
-    "@astrojs/cloudflare": "14.3.0",
     "@tailwindcss/vite": "^4.1.18",
     "astro": "7.3.1",
     "js-yaml": "^5.4.1",
