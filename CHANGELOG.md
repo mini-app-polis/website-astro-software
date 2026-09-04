@@ -1,3 +1,10 @@
+# [1.25.0](https://github.com/mini-app-polis/website-astro-software/compare/v1.24.2...v1.25.0) (2026-09-04)
+
+
+### Features
+
+* **security:** call the shared security workflow, clear 10 advisories ([3f9f712](https://github.com/mini-app-polis/website-astro-software/commit/3f9f712f1067f6c4773a8f08ffc5712c6a14a3cb))
+
 ## [1.24.2](https://github.com/mini-app-polis/website-astro-software/compare/v1.24.1...v1.24.2) (2026-08-16)
 
 
