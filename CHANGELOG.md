@@ -1,3 +1,10 @@
+## [2.0.2](https://github.com/mini-app-polis/website-astro-software/compare/v2.0.1...v2.0.2) (2026-09-04)
+
+
+### Bug Fixes
+
+* **deploy:** drop the unused Cloudflare adapter that 404'd the site ([1cea591](https://github.com/mini-app-polis/website-astro-software/commit/1cea591c24063ea4a8257b2ea6a32e7619fcffa0))
+
 ## [2.0.1](https://github.com/mini-app-polis/website-astro-software/compare/v2.0.0...v2.0.1) (2026-09-04)
 
 
