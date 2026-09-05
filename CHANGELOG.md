@@ -1,3 +1,10 @@
+## [2.0.3](https://github.com/mini-app-polis/website-astro-software/compare/v2.0.2...v2.0.3) (2026-09-05)
+
+
+### Bug Fixes
+
+* **deps:** pin @astrojs/check to an exact version ([0e0c79a](https://github.com/mini-app-polis/website-astro-software/commit/0e0c79a0c18a32b0c270c9d8807f34c622938991))
+
 ## [2.0.2](https://github.com/mini-app-polis/website-astro-software/compare/v2.0.1...v2.0.2) (2026-09-04)
 
 
