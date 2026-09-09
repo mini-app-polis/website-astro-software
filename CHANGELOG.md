@@ -1,3 +1,10 @@
+## [2.1.3](https://github.com/mini-app-polis/website-astro-software/compare/v2.1.2...v2.1.3) (2026-09-09)
+
+
+### Bug Fixes
+
+* repo page formatting ([3982076](https://github.com/mini-app-polis/website-astro-software/commit/3982076105530f62ec0bc1c4bdef8401b3879754))
+
 ## [2.1.2](https://github.com/mini-app-polis/website-astro-software/compare/v2.1.1...v2.1.2) (2026-09-09)
 
 
