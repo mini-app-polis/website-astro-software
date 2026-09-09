@@ -1,3 +1,10 @@
+## [2.1.2](https://github.com/mini-app-polis/website-astro-software/compare/v2.1.1...v2.1.2) (2026-09-09)
+
+
+### Bug Fixes
+
+* adding private repo metadata ([b02f32a](https://github.com/mini-app-polis/website-astro-software/commit/b02f32a81a1818844adf757ebff065e959f7b945))
+
 ## [2.1.1](https://github.com/mini-app-polis/website-astro-software/compare/v2.1.0...v2.1.1) (2026-09-09)
 
 
