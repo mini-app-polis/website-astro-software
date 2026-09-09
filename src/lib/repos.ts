@@ -130,6 +130,24 @@ export function esc(value: unknown): string {
     .replaceAll("'", "&#39;");
 }
 
+/**
+ * Pill classes for a repository's visibility.
+ *
+ * Private gets the warmer treatment and public the quiet one, because the
+ * information a reader is scanning for is "which of these am I not supposed
+ * to be able to see the inside of" — public is the unremarkable case and
+ * should not compete with the build state next to it.
+ */
+export function visibilityClass(isPrivate: unknown): string {
+  return isPrivate
+    ? "text-amber-300/90 border-amber-500/30 bg-amber-500/10"
+    : "text-slate-400 border-white/10 bg-white/[0.03]";
+}
+
+export function visibilityLabel(isPrivate: unknown): string {
+  return isPrivate ? "private" : "public";
+}
+
 /** Coerce an untrusted value (a data attribute, a query param) to a RepoFilter. */
 export function normalizeFilter(value: unknown): RepoFilter {
   const v = String(value ?? "all");
@@ -154,6 +172,7 @@ export interface BuildCounts {
 export interface RepoRow {
   org: string;
   name: string;
+  private: boolean;
   url: string;
   description: string | null;
   language: string | null;

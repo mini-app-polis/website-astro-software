@@ -103,6 +103,8 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
       normalizeFilter,
       orgFailureLabel,
       REPO_FILTERS,
+      visibilityClass,
+      visibilityLabel,
       type RepoFilter,
       type RepoRow,
       type RepoStatusPayload,
@@ -196,7 +198,13 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
 
     function matchesQuery(repo: RepoRow): boolean {
       if (!query) return true;
-      return [repo.org, repo.name, repo.language, repo.description]
+      return [
+        repo.org,
+        repo.name,
+        repo.language,
+        repo.description,
+        visibilityLabel(repo.private),
+      ]
         .map((v) => String(v ?? "").toLowerCase())
         .join(" ")
         .includes(query);
@@ -216,10 +224,11 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
       row.style.setProperty("--d", `${Math.min(idx, 12) * 40}ms`);
       row.innerHTML = `
         <div class="min-w-0">
-          <div class="flex flex-wrap items-center gap-2">
+          <div class="flex min-w-0 items-center gap-2">
             <span class="h-2 w-2 shrink-0 rounded-full ${buildDotClass(state)}"></span>
-            <a href="${url}" rel="noopener" class="truncate font-medium text-slate-100 hover:text-accent">${slug}</a>
-            <span class="rounded-full border px-2 py-0.5 text-[11px] font-mono ${buildClass(state)}">${buildLabel(state)}</span>
+            <a href="${url}" rel="noopener" class="min-w-0 truncate font-medium text-slate-100 hover:text-accent">${slug}</a>
+            <span class="shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-mono ${buildClass(state)}">${buildLabel(state)}</span>
+            <span class="shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-mono ${visibilityClass(repo.private)}">${visibilityLabel(repo.private)}</span>
           </div>
           <p class="mt-1 line-clamp-2 text-sm text-slate-400">${esc(repo.description ?? "")}</p>
         </div>
@@ -344,6 +353,8 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
       ];
       if (payload?.private_disclosure === "aggregate") {
         parts.push("private repositories are counted, never named");
+      } else if (payload?.private_disclosure === "full") {
+        parts.push("public and private repositories both listed");
       }
       footerEl.textContent = parts.join(" \u00b7 ");
 
