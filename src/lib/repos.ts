@@ -161,6 +161,7 @@ export interface RepoRow {
   build: BuildState;
   open_pull_requests: number;
   open_issues: number;
+  branches: number;
   pushed_at: string | null;
 }
 
@@ -169,6 +170,7 @@ export interface PrivateSummary {
   builds: BuildCounts;
   open_pull_requests: number;
   open_issues: number;
+  branches: number;
 }
 
 export interface OrgSummary {
@@ -181,7 +183,39 @@ export interface RepoTotals {
   repositories: number;
   open_pull_requests: number;
   open_issues: number;
+  branches: number;
   builds: BuildCounts;
+}
+
+export type OrgFailureReason =
+  | "unauthorized"
+  | "not_found_or_no_access"
+  | "rate_limited"
+  | "unreachable";
+
+export interface OrgError {
+  login: string;
+  reason: OrgFailureReason;
+}
+
+/**
+ * Reader-facing wording for why an org is missing from the board.
+ *
+ * The API deliberately sends a category rather than GitHub's error text, so
+ * the sentence is written here. It says what a reader can act on without
+ * asserting more than the server actually knows: a null organization means
+ * "absent or invisible" and the two are indistinguishable from the outside.
+ */
+export const ORG_FAILURE_LABELS: Record<OrgFailureReason, string> = {
+  unauthorized: "the token is not authorized for it",
+  not_found_or_no_access: "it was not found, or the token cannot see it",
+  rate_limited: "GitHub rate-limited the request",
+  unreachable: "GitHub could not be reached",
+};
+
+export function orgFailureLabel(reason: unknown): string {
+  const key = String(reason ?? "") as OrgFailureReason;
+  return ORG_FAILURE_LABELS[key] ?? ORG_FAILURE_LABELS.unreachable;
 }
 
 export interface RepoStatusPayload {
@@ -191,5 +225,6 @@ export interface RepoStatusPayload {
   private_disclosure: "aggregate" | "hidden" | "full";
   orgs: OrgSummary[];
   repositories: RepoRow[];
+  unavailable_orgs: OrgError[];
   totals: RepoTotals;
 }

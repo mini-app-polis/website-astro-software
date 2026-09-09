@@ -11,6 +11,14 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
     <span data-repo-stale-age>—</span>.
   </div>
 
+  <div
+    class="hidden rounded-lg border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-slate-400"
+    data-repo-error
+  >
+    Repository status is unavailable right now \u2014 the board could not be read
+    from GitHub. It reappears on the next successful refresh.
+  </div>
+
   <div class="grid grid-cols-2 gap-3 sm:grid-cols-4" data-repo-totals>
     {[
       { key: "repositories", label: "Repositories" },
@@ -30,7 +38,7 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
     ))}
   </div>
 
-  <div class="rounded-2xl border border-white/10 bg-white/[0.02] p-6 shadow-soft">
+  <div class="rounded-2xl border border-white/10 bg-white/[0.02] p-6 shadow-soft" data-repo-card>
     <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div>
         <h3 class="font-display text-xl tracking-tight">Listed repositories</h3>
@@ -79,6 +87,8 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
 
     <div class="mt-3 space-y-2" data-repo-private></div>
 
+    <div class="mt-3 space-y-2" data-repo-unavailable></div>
+
     <p class="mt-4 text-xs text-slate-500" data-repo-footer>—</p>
   </div>
 
@@ -91,6 +101,7 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
       matchesFilter,
       normalizeBuild,
       normalizeFilter,
+      orgFailureLabel,
       REPO_FILTERS,
       type RepoFilter,
       type RepoRow,
@@ -108,7 +119,23 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
     const stale = root.querySelector<HTMLElement>("[data-repo-stale]");
     const search = root.querySelector<HTMLInputElement>("[data-repo-search]");
     const subtitle = root.querySelector<HTMLElement>("[data-repo-subtitle]");
-    if (!list || !privates || !empty || !footer || !stale || !search || !subtitle) {
+    const unavailable = root.querySelector<HTMLElement>("[data-repo-unavailable]");
+    const errorBanner = root.querySelector<HTMLElement>("[data-repo-error]");
+    const totalsEl = root.querySelector<HTMLElement>("[data-repo-totals]");
+    const card = root.querySelector<HTMLElement>("[data-repo-card]");
+    if (
+      !list ||
+      !privates ||
+      !empty ||
+      !footer ||
+      !stale ||
+      !search ||
+      !subtitle ||
+      !unavailable ||
+      !errorBanner ||
+      !totalsEl ||
+      !card
+    ) {
       throw new Error("RepoStatus markup is incomplete");
     }
     // Re-bound to non-nullable consts so the narrowing above holds inside
@@ -120,6 +147,17 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
     const staleEl: HTMLElement = stale;
     const searchEl: HTMLInputElement = search;
     const subtitleEl: HTMLElement = subtitle;
+    const unavailableEl: HTMLElement = unavailable;
+    const errorEl: HTMLElement = errorBanner;
+    const totalsGridEl: HTMLElement = totalsEl;
+    const cardEl: HTMLElement = card;
+
+    /** Show the board could not be read, instead of silently vanishing. */
+    function showUnreadable(): void {
+      errorEl.classList.remove("hidden");
+      totalsGridEl.classList.add("hidden");
+      cardEl.classList.add("hidden");
+    }
 
     const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
 
@@ -188,6 +226,7 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
         <div class="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 text-xs font-mono text-slate-400">
           <a href="${url}/pulls" rel="noopener" class="hover:text-accent">${plural(Number(repo.open_pull_requests ?? 0), "PR", "PRs")}</a>
           <a href="${url}/issues" rel="noopener" class="hover:text-accent">${plural(Number(repo.open_issues ?? 0), "issue", "issues")}</a>
+          <a href="${url}/branches" rel="noopener" class="hover:text-accent">${plural(Number(repo.branches ?? 0), "branch", "branches")}</a>
           <span class="text-slate-600">${meta.join(" \u00b7 ")}</span>
         </div>
       `;
@@ -210,9 +249,24 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
           <span class="mt-1 block text-xs text-slate-500">
             ${unhealthy > 0 ? `<span class="text-amber-400">${unhealthy} not passing</span> \u00b7 ` : ""}${plural(Number(priv.open_pull_requests ?? 0), "open PR", "open PRs")}
             \u00b7 ${plural(Number(priv.open_issues ?? 0), "open issue", "open issues")}
+            \u00b7 ${plural(Number(priv.branches ?? 0), "branch", "branches")}
           </span>
         `;
         privateEl.appendChild(el);
+      }
+    }
+
+    function renderUnavailable(): void {
+      unavailableEl.innerHTML = "";
+      for (const org of payload?.unavailable_orgs ?? []) {
+        const el = document.createElement("div");
+        el.className =
+          "rounded-lg border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3 text-sm text-amber-300/90";
+        el.innerHTML = `
+          <span class="font-mono">${esc(org.login)}</span> is not included in these
+          numbers \u2014 ${esc(orgFailureLabel(org.reason))}.
+        `;
+        unavailableEl.appendChild(el);
       }
     }
 
@@ -307,6 +361,7 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
       renderFilterCounts();
       renderList();
       renderPrivate();
+      renderUnavailable();
       renderFooter();
     }
 
@@ -334,20 +389,26 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
           cache: "no-store",
         });
         if (!res.ok) {
-          root.classList.add("hidden");
+          // 501 is the deployment saying it has no token yet. That is not
+          // news to a visitor, so the panel stays out of the way. Anything
+          // else means the board exists and could not be read — say so,
+          // rather than leaving a page with a heading and nothing under it,
+          // which is indistinguishable from the feature being broken.
+          if (res.status !== 501) showUnreadable();
+          else root.classList.add("hidden");
           return;
         }
         const json = await res.json();
         payload = (json?.data ?? null) as RepoStatusPayload | null;
         if (!payload) {
-          root.classList.add("hidden");
+          showUnreadable();
           return;
         }
         render();
       } catch {
-        // The board is a panel on a portfolio, not an oncall surface. A dead
-        // API hides it rather than leaving a broken shell on the page.
-        root.classList.add("hidden");
+        // A network-level failure is the same story as a 5xx from the
+        // reader's point of view: the board is there, it could not be read.
+        showUnreadable();
       }
     }
 
