@@ -38,6 +38,25 @@ export function normalizeBuild(state: unknown): BuildState {
     : "none";
 }
 
+/**
+ * Compare two repos by `org/name`, case- and numeral-aware.
+ *
+ * The API returns worst-build-first, which is the right default for a
+ * payload but the wrong one for a page you read repeatedly: a row that moves
+ * every time a build flips is a row you have to search for. Alphabetical
+ * means a repo is always where you last saw it, and the build state is
+ * carried by the pill and the filter chips instead of by position.
+ */
+export function compareRepos(
+  a: { org: string; name: string },
+  b: { org: string; name: string },
+): number {
+  return `${a.org}/${a.name}`.localeCompare(`${b.org}/${b.name}`, undefined, {
+    sensitivity: "base",
+    numeric: true,
+  });
+}
+
 /** Sort rank — lower is louder. Mirrors the server's own ordering. */
 export function buildRank(state: unknown): number {
   return BUILD_STATES.indexOf(normalizeBuild(state));
@@ -133,15 +152,15 @@ export function esc(value: unknown): string {
 /**
  * Pill classes for a repository's visibility.
  *
- * Private gets the warmer treatment and public the quiet one, because the
- * information a reader is scanning for is "which of these am I not supposed
- * to be able to see the inside of" — public is the unremarkable case and
- * should not compete with the build state next to it.
+ * Public carries the site accent and private stays neutral: on a portfolio
+ * the readable repo is the one worth drawing a visitor toward, and a private
+ * one is a row they can see but not open. This is the opposite of the
+ * emphasis a private board would want.
  */
 export function visibilityClass(isPrivate: unknown): string {
   return isPrivate
-    ? "text-amber-300/90 border-amber-500/30 bg-amber-500/10"
-    : "text-slate-400 border-white/10 bg-white/[0.03]";
+    ? "text-slate-400 border-white/10 bg-white/[0.03]"
+    : "text-accent border-accent/30 bg-accent/10";
 }
 
 export function visibilityLabel(isPrivate: unknown): string {

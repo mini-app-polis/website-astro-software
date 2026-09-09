@@ -97,6 +97,7 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
       buildClass,
       buildDotClass,
       buildLabel,
+      compareRepos,
       esc,
       matchesFilter,
       normalizeBuild,
@@ -326,9 +327,9 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
     }
 
     function renderList(): void {
-      const shown = (payload?.repositories ?? []).filter(
-        (r) => matchesFilter(r.build, filter) && matchesQuery(r),
-      );
+      const shown = (payload?.repositories ?? [])
+        .filter((r) => matchesFilter(r.build, filter) && matchesQuery(r))
+        .sort(compareRepos);
       listEl.innerHTML = "";
       shown.forEach((repo, idx) => listEl.appendChild(repoRow(repo, idx)));
       emptyEl.classList.toggle("hidden", shown.length > 0);
