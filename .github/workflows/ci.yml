@@ -17,7 +17,7 @@ jobs:
   # freeze deploys rather than fix anything. The job reports; it does not
   # block. Add `security` to release's `needs` once the audit is green.
   security:
-    uses: mini-app-polis/.github/.github/workflows/security.yml@v1
+    uses: mini-app-polis/.github/.github/workflows/security.yml@v2
     with:
       language: typescript
       package-manager: npm
