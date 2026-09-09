@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/mini-app-polis/website-astro-software/compare/v2.0.3...v2.1.0) (2026-09-09)
+
+
+### Features
+
+* **repos:** add repository status board ([4c499b8](https://github.com/mini-app-polis/website-astro-software/commit/4c499b8088c3568c303643114fbd4265be685852))
+
 ## [2.0.3](https://github.com/mini-app-polis/website-astro-software/compare/v2.0.2...v2.0.3) (2026-09-05)
 
 
