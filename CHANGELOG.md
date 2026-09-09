@@ -1,3 +1,10 @@
+## [2.1.1](https://github.com/mini-app-polis/website-astro-software/compare/v2.1.0...v2.1.1) (2026-09-09)
+
+
+### Bug Fixes
+
+* adding branch count ([5d9966a](https://github.com/mini-app-polis/website-astro-software/commit/5d9966a7493bdc25313159bdd99eea801de7d532))
+
 # [2.1.0](https://github.com/mini-app-polis/website-astro-software/compare/v2.0.3...v2.1.0) (2026-09-09)
 
 
