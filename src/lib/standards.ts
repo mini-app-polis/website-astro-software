@@ -1,24 +1,122 @@
 /**
- * Build-time fetchers for ecosystem-standards.
+ * The standards catalog, as the site reads it.
  *
- * This module is the single source of truth for how the site reads the
- * ecosystem-standards repo at build time. All other build-time consumers
- * (StandardsBrowser, the /ecosystem page, the severity and source enum
- * generators) go through here — there is no other allowed path to the
- * standards repo.
+ * The site used to walk the ecosystem-standards repo at build time:
+ * index.yaml to discover the domain files, then every domain file, then
+ * package.json for the version. It now reads one compiled catalog from
+ * the API, in the browser, like every other live panel on this site.
  *
- * Why raw.githubusercontent.com, not api.github.com:
- *   The api.github.com Contents endpoint is rate-limited to 60 req/hour
- *   per IP for unauthenticated calls. Cloudflare Pages build containers
- *   share IPs and blow through the quota, which caused the "Unable to
- *   load standards" fallback to render. raw.githubusercontent.com serves
- *   raw file bytes with no practical rate limit for public repos.
+ * Two things change as a result. The site no longer depends on GitHub for
+ * rule text — raw.githubusercontent had been chosen over api.github.com
+ * to dodge a 60-req/hour rate limit that Cloudflare Pages build
+ * containers kept tripping, and that whole problem goes away with the
+ * fetch. And the rules stop being as stale as the last site deploy:
+ * nothing rebuilds this site when the standards release, so a build-time
+ * fetch meant the page could sit months behind the catalog it claimed to
+ * show.
+ *
+ * The catalog is always served from production. Catalogs are published
+ * only from ecosystem-standards' release job on `main`, so there is no
+ * development copy to point at — rule text is not environment-specific.
  */
+
+import { apiFetch } from "./api";
+
+// ── Catalog schema ────────────────────────────────────────────
+//
+// Mirrors what ecosystem-standards' compiler emits. Only the fields this
+// site renders are declared; the catalog carries more.
+
+export type RuleStatus = "requirement" | "convention" | "gap";
+export type RuleSeverity = "ERROR" | "WARN" | "INFO";
+export type CheckMode = "deterministic" | "llm" | null;
+
+export interface Rule {
+  id: string;
+  /** Which standards file the rule came from, e.g. "delivery". */
+  domain?: string;
+  title: string;
+  status: RuleStatus;
+  dimension?: string;
+  severity?: RuleSeverity;
+  description: string;
+  checkable?: boolean;
+  /** Resolved by the compiler, not parsed out of check_notes here. */
+  check_mode?: CheckMode;
+  check_notes?: string;
+  /** `["all"]` is the catalog's default posture. `null` means not a repo scan. */
+  applies_to?: string[] | null;
+  modifies?: string[];
+  origin?: string;
+}
+
+export interface StandardsCatalog {
+  version: string;
+  compiled_at: string;
+  rule_count: number;
+  dimensions?: Record<string, string>;
+  severities?: Record<string, string>;
+  statuses?: Record<string, { description?: string }>;
+  schema?: {
+    repo_types?: Record<string, string>;
+    traits?: Record<string, unknown>;
+  };
+  rules: Rule[];
+}
+
+/** Path on the API. Callers reach it through `apiFetch`, which resolves the base. */
+export const CATALOG_PATH = "/v1/standards/catalog";
+
+/**
+ * Fetch the latest published catalog, or null.
+ *
+ * Never throws. A page that cannot reach the catalog should say so and
+ * render the rest of itself, not fail to build or blank out.
+ */
+export async function fetchCatalog(): Promise<StandardsCatalog | null> {
+  return apiFetch<StandardsCatalog | null>(CATALOG_PATH, null);
+}
+
+/**
+ * Group rules by their domain, sorted for display.
+ *
+ * The domain comes off each rule now. It used to require reading
+ * index.yaml's `files:` list to discover which files existed and then
+ * fetching each one — the catalog resolves that at build time.
+ */
+export function groupByDomain(rules: Rule[]): Array<{ key: string; label: string; rules: Rule[] }> {
+  const byKey = new Map<string, Rule[]>();
+  for (const rule of rules) {
+    const key = rule.domain || "other";
+    const bucket = byKey.get(key);
+    if (bucket) bucket.push(rule);
+    else byKey.set(key, [rule]);
+  }
+  return [...byKey.entries()]
+    .map(([key, domainRules]) => ({ key, label: titleCase(key), rules: domainRules }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
+function titleCase(key: string): string {
+  return (
+    key
+      .split(/[-_]/)
+      .filter(Boolean)
+      .map((word) => word[0].toUpperCase() + word.slice(1))
+      .join(" ") || key
+  );
+}
+
+// ── The last GitHub dependency ────────────────────────────────
+//
+// `fetchEcosystem` below still reads ecosystem.yaml from the standards
+// repo. That file is being deleted — the standards repo is to hold rules
+// and no repo or org knowledge — and the /ecosystem page and the homepage
+// service count are its only remaining readers. Until that inventory
+// moves, this is the one path here that still touches GitHub.
 
 export const STANDARDS_RAW_BASE =
   "https://raw.githubusercontent.com/mini-app-polis/ecosystem-standards/main";
-
-// ── YAML loader (lazy, single import) ─────────────────────────
 
 let yamlLoad: ((input: string) => unknown) | null = null;
 
@@ -30,152 +128,16 @@ async function getYamlLoader(): Promise<(input: string) => unknown> {
   return yamlLoad;
 }
 
-async function parseYamlText<T>(yamlText: string): Promise<T> {
-  const load = await getYamlLoader();
-  return load(yamlText) as T;
-}
-
-async function fetchYamlText(path: string): Promise<string | null> {
+export async function fetchYaml<T>(path: string): Promise<T | null> {
   try {
     const res = await fetch(`${STANDARDS_RAW_BASE}/${path}`);
     if (!res.ok) return null;
-    return await res.text();
-  } catch {
-    return null;
-  }
-}
-
-export async function fetchYaml<T>(path: string): Promise<T | null> {
-  const text = await fetchYamlText(path);
-  if (text == null) return null;
-  try {
-    return await parseYamlText<T>(text);
+    const load = await getYamlLoader();
+    return load(await res.text()) as T;
   } catch (error) {
-    console.error(`Failed to parse ${path} from ${STANDARDS_RAW_BASE}`, error);
+    console.error(`Failed to load ${path} from ${STANDARDS_RAW_BASE}`, error);
     return null;
   }
-}
-
-/**
- * Fetch the current ecosystem-standards repo version from its package.json.
- *
- * This is the authoritative answer to "what version is the standards repo at
- * right now?" — a property of the repo itself, distinct from any per-finding
- * `standards_version` value pinned at evaluation time. The homepage badge and
- * the EvaluationSummary footer use this so that drift in upstream evaluators
- * (a cog emitting a stale pinned version) cannot make the site misreport the
- * current repo state.
- *
- * Returns the `version` string from package.json, or `null` if the fetch or
- * JSON parse fails. Callers should fall back gracefully rather than blocking
- * the build on a transient GitHub hiccup.
- */
-export async function fetchVersion(): Promise<string | null> {
-  try {
-    const res = await fetch(`${STANDARDS_RAW_BASE}/package.json`);
-    if (!res.ok) return null;
-    const pkg = (await res.json()) as { version?: unknown };
-    return typeof pkg.version === "string" ? pkg.version : null;
-  } catch (error) {
-    console.error(`Failed to fetch package.json from ${STANDARDS_RAW_BASE}`, error);
-    return null;
-  }
-}
-
-// ── index.yaml schema ─────────────────────────────────────────
-
-export interface IndexFileEntry {
-  file: string;
-  domain?: string;
-  description?: string;
-  rule_prefix?: string;
-}
-
-export interface IndexFile {
-  dimensions?: Record<string, string>;
-  severities?: Record<string, string>;
-  statuses?: Record<string, { description?: string }>;
-  schema?: {
-    repo_types?: Record<string, string>;
-    traits?: Record<string, unknown>;
-  };
-  files?: IndexFileEntry[];
-}
-
-export async function fetchIndex(): Promise<IndexFile | null> {
-  return fetchYaml<IndexFile>("index.yaml");
-}
-
-// ── Standards domain files ────────────────────────────────────
-
-export type RuleStatus = "requirement" | "convention" | "gap";
-export type RuleSeverity = "ERROR" | "WARN" | "INFO";
-
-export interface Rule {
-  id: string;
-  title: string;
-  status: RuleStatus;
-  dimension?: string;
-  severity?: RuleSeverity;
-  description: string;
-  checkable?: boolean;
-  check_notes?: string;
-  applies_to?: string[] | string;
-  origin?: string;
-}
-
-export interface DomainFile {
-  domain?: string;
-  standards?: Rule[];
-  rules?: Rule[];
-}
-
-export interface DomainFileResult {
-  key: string;
-  description?: string;
-  rules: Rule[];
-}
-
-/**
- * Fetch every domain file listed in index.yaml.
- *
- * "Domain file" = an entry in index.yaml's `files:` list that carries a
- * `rule_prefix`. Non-domain entries (ecosystem.yaml, definitions-of-done.yaml)
- * omit `rule_prefix` and are excluded structurally — adding a new domain
- * file to index.yaml will automatically pick it up here, and new non-domain
- * files will be excluded without code changes.
- *
- * Returns an empty array if index.yaml cannot be fetched or parsed. Domain
- * files that fail to parse individually are logged and skipped.
- */
-export async function fetchDomainFiles(): Promise<DomainFileResult[]> {
-  const index = await fetchIndex();
-  if (!index) return [];
-
-  const domainEntries = (index.files ?? []).filter(
-    (entry): entry is IndexFileEntry =>
-      typeof entry === "object" &&
-      entry !== null &&
-      typeof entry.file === "string" &&
-      typeof entry.rule_prefix === "string",
-  );
-
-  const fetched = await Promise.all(
-    domainEntries.map(async (entry) => {
-      const data = await fetchYaml<DomainFile>(entry.file);
-      if (!data) return null;
-      const filename = entry.file.split("/").pop() ?? entry.file;
-      const key = filename.replace(/\.ya?ml$/, "");
-      const rules = Array.isArray(data.standards)
-        ? data.standards
-        : Array.isArray(data.rules)
-          ? data.rules
-          : [];
-      return { key, description: entry.description, rules };
-    }),
-  );
-
-  return fetched.filter((r): r is DomainFileResult => r !== null);
 }
 
 // ── ecosystem.yaml schema ─────────────────────────────────────

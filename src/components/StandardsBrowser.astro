@@ -2,92 +2,27 @@
 /**
  * StandardsBrowser
  *
- * Fetches the ecosystem-standards rules at build time and renders a
- * browsable view grouped by domain. Each rule shows its ID, title,
- * severity, status, and description. All fetches are build-time (SSG) —
- * no client-side API calls.
+ * A browsable view of the rule catalog, grouped by domain.
  *
- * Source of truth: index.yaml (domain discovery + labels via description)
- * and standards/*.yaml (rules). See src/lib/standards.ts.
+ * Reads the published catalog from the API in the browser. It used to
+ * assemble the same view at build time from index.yaml plus every
+ * standards/*.yaml in the repo — roughly nineteen GitHub requests per
+ * build, and a page that stayed as stale as the last site deploy, since
+ * nothing rebuilds this site when the standards release.
+ *
+ * Rules with `checkable: false` are shown rather than hidden. They are
+ * tracked rules the evaluator has no check for, and the catalog carries
+ * them precisely so they read as unverified rather than absent — hiding
+ * them here would restore the problem the catalog was changed to fix.
  */
-
-import { fetchIndex, fetchDomainFiles, type Rule } from "../lib/standards";
-
-const [index, domainResults] = await Promise.all([
-  fetchIndex(),
-  fetchDomainFiles(),
-]);
-
-const fetchError = index == null || domainResults.length === 0;
-
-// Build the per-domain display list. We use the description from index.yaml
-// as the friendly label where possible; if absent, fall back to the raw key.
-// This keeps new domain files correctly labeled without code changes here —
-// rename a description in index.yaml and the site picks it up on next build.
-function labelFor(key: string, description?: string): string {
-  // index.yaml descriptions are sentences (e.g. "Standards for all Python
-  // services..."); we want a short label. Prefer a "title case of key"
-  // derived from the filename, which matches the domain key convention.
-  const base = key
-    .split(/[-_]/)
-    .filter(Boolean)
-    .map((w) => w[0].toUpperCase() + w.slice(1))
-    .join(" ");
-  return base || description || key;
-}
-
-const domainFiles = domainResults
-  .map((d) => ({
-    key: d.key,
-    label: labelFor(d.key, d.description),
-    rules: d.rules,
-  }))
-  .sort((a, b) => a.label.localeCompare(b.label));
-
-const totalRules = domainFiles.reduce((sum, d) => sum + d.rules.length, 0);
-const checkableRules = domainFiles.reduce(
-  (sum, d) => sum + d.rules.filter((r) => r.checkable === true).length,
-  0,
-);
-
-// Severity class mapping. Rule-level severities are ERROR | WARN | INFO
-// per index.yaml schema.rule_fields.severity.allowed_values. CRITICAL and
-// SUCCESS are emission-only and never appear on rule definitions, so we
-// don't need them here — but we handle them defensively in case a rule
-// somewhere is mislabeled.
-function severityClass(severity?: string): string {
-  if (severity === "CRITICAL") return "text-rose-300 border-rose-500/40 bg-rose-500/15";
-  if (severity === "ERROR") return "text-red-400 border-red-500/30 bg-red-500/10";
-  if (severity === "WARN") return "text-amber-400 border-amber-500/30 bg-amber-500/10";
-  if (severity === "SUCCESS") return "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
-  return "text-slate-300 border-slate-500/30 bg-slate-500/10";
-}
-
-function statusClass(status?: string): string {
-  if (status === "requirement") return "text-accent border-accent/30 bg-accent/10";
-  if (status === "convention") return "text-sky-400 border-sky-500/30 bg-sky-500/10";
-  if (status === "gap") return "text-rose-400 border-rose-500/30 bg-rose-500/10";
-  return "text-slate-500 border-white/10 bg-white/5";
-}
 ---
 
-{fetchError ? (
-  <p class="text-sm text-slate-500">
-    Unable to load standards — check back shortly or view the
-    <a
-      href="https://github.com/mini-app-polis/ecosystem-standards"
-      target="_blank"
-      rel="noreferrer"
-      class="text-slate-300 underline hover:text-slate-100"
-    >repo directly</a>.
-  </p>
-) : (
-  <div class="space-y-3">
-    <!-- Header row: counts + link to standards repo -->
+<div data-standards-root class="space-y-3">
+  <p data-standards-status class="text-sm text-slate-500">Loading standards…</p>
+
+  <div data-standards-content class="hidden space-y-3">
     <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
-      <span class="text-xs text-slate-500">
-        {totalRules} rules · {checkableRules} checkable
-      </span>
+      <span data-standards-counts class="text-xs text-slate-500"></span>
       <a
         href="https://github.com/mini-app-polis/ecosystem-standards"
         target="_blank"
@@ -97,65 +32,168 @@ function statusClass(status?: string): string {
         GitHub ↗
       </a>
     </div>
-
-    <!-- Domain sections -->
-    {domainFiles.map((domain) => (
-      <details class="group rounded-xl border border-white/10 bg-white/[0.02]" open={false}>
-        <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 hover:bg-white/[0.02]">
-          <div class="flex items-center gap-3">
-            <span class="font-display text-sm tracking-tight text-slate-100">
-              {domain.label}
-            </span>
-            <span class="font-mono text-xs text-slate-500">
-              {domain.rules.length} rules
-            </span>
-          </div>
-          <svg
-            class="h-4 w-4 shrink-0 text-slate-500 transition-transform group-open:rotate-180"
-            viewBox="0 0 16 16"
-            fill="none"
-          >
-            <path
-              d="M4 6l4 4 4-4"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </summary>
-
-        <div class="divide-y divide-white/5 border-t border-white/5">
-          {domain.rules.map((rule: Rule) => (
-            <div class="space-y-1.5 px-4 py-3">
-              <div class="flex flex-wrap items-center gap-2">
-                <span class="font-mono text-xs text-slate-500">{rule.id}</span>
-                {rule.severity && (
-                  <span
-                    class={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-mono ${severityClass(rule.severity)}`}
-                  >
-                    {rule.severity}
-                  </span>
-                )}
-                {rule.status && (
-                  <span
-                    class={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-mono capitalize ${statusClass(rule.status)}`}
-                  >
-                    {rule.status}
-                  </span>
-                )}
-                {rule.checkable && (
-                  <span class="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-xs font-mono text-emerald-400">
-                    checkable
-                  </span>
-                )}
-              </div>
-              <p class="text-sm font-medium text-slate-200">{rule.title}</p>
-              <p class="text-xs leading-relaxed text-slate-400">{rule.description}</p>
-            </div>
-          ))}
-        </div>
-      </details>
-    ))}
+    <div data-standards-domains class="space-y-3"></div>
   </div>
-)}
+</div>
+
+<script>
+  const root = document.querySelector("[data-standards-root]");
+  const statusEl = root?.querySelector("[data-standards-status]");
+  const contentEl = root?.querySelector("[data-standards-content]");
+  const countsEl = root?.querySelector("[data-standards-counts]");
+  const domainsEl = root?.querySelector("[data-standards-domains]");
+
+  const SEVERITY_CLASS = {
+    CRITICAL: "text-rose-300 border-rose-500/40 bg-rose-500/15",
+    ERROR: "text-red-400 border-red-500/30 bg-red-500/10",
+    WARN: "text-amber-400 border-amber-500/30 bg-amber-500/10",
+    SUCCESS: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
+  };
+  const STATUS_CLASS = {
+    requirement: "text-accent border-accent/30 bg-accent/10",
+    convention: "text-sky-400 border-sky-500/30 bg-sky-500/10",
+    gap: "text-rose-400 border-rose-500/30 bg-rose-500/10",
+  };
+  const NEUTRAL = "text-slate-300 border-slate-500/30 bg-slate-500/10";
+  const PILL = "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-mono";
+
+  function titleCase(key) {
+    return (
+      String(key)
+        .split(/[-_]/)
+        .filter(Boolean)
+        .map((word) => word[0].toUpperCase() + word.slice(1))
+        .join(" ") || key
+    );
+  }
+
+  function pill(text, classes, extra = "") {
+    const span = document.createElement("span");
+    span.className = `${PILL} ${classes} ${extra}`.trim();
+    span.textContent = text;
+    return span;
+  }
+
+  function ruleRow(rule) {
+    const row = document.createElement("div");
+    row.className = "space-y-1.5 px-4 py-3";
+
+    const badges = document.createElement("div");
+    badges.className = "flex flex-wrap items-center gap-2";
+
+    const id = document.createElement("span");
+    id.className = "font-mono text-xs text-slate-500";
+    id.textContent = rule.id;
+    badges.appendChild(id);
+
+    if (rule.severity) {
+      badges.appendChild(pill(rule.severity, SEVERITY_CLASS[rule.severity] ?? NEUTRAL));
+    }
+    if (rule.status) {
+      badges.appendChild(
+        pill(rule.status, STATUS_CLASS[rule.status] ?? "text-slate-500 border-white/10 bg-white/5", "capitalize"),
+      );
+    }
+    // Checkable and not-checkable are both worth stating. A rule with no
+    // check is tracked-but-unverified, which is different from a rule that
+    // passed, and the badge is the only place that distinction shows.
+    badges.appendChild(
+      rule.checkable
+        ? pill("checkable", "text-emerald-400 border-emerald-500/30 bg-emerald-500/10")
+        : pill("no check", "text-slate-500 border-white/10 bg-white/5"),
+    );
+    row.appendChild(badges);
+
+    const title = document.createElement("p");
+    title.className = "text-sm font-medium text-slate-200";
+    title.textContent = rule.title ?? "";
+    row.appendChild(title);
+
+    const description = document.createElement("p");
+    description.className = "text-xs leading-relaxed text-slate-400";
+    description.textContent = rule.description ?? "";
+    row.appendChild(description);
+
+    return row;
+  }
+
+  function domainSection(label, rules) {
+    const details = document.createElement("details");
+    details.className = "group rounded-xl border border-white/10 bg-white/[0.02]";
+
+    const summary = document.createElement("summary");
+    summary.className =
+      "flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 hover:bg-white/[0.02]";
+    summary.innerHTML = `
+      <div class="flex items-center gap-3">
+        <span data-label class="font-display text-sm tracking-tight text-slate-100"></span>
+        <span data-count class="font-mono text-xs text-slate-500"></span>
+      </div>
+      <svg class="h-4 w-4 shrink-0 text-slate-500 transition-transform group-open:rotate-180" viewBox="0 0 16 16" fill="none">
+        <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>`;
+    // Addressed by attribute rather than by position: a structural selector
+    // here breaks silently the next time the summary markup gains a span.
+    summary.querySelector("[data-label]").textContent = label;
+    summary.querySelector("[data-count]").textContent = `${rules.length} rules`;
+    details.appendChild(summary);
+
+    const body = document.createElement("div");
+    body.className = "divide-y divide-white/5 border-t border-white/5";
+    rules.forEach((rule) => body.appendChild(ruleRow(rule)));
+    details.appendChild(body);
+
+    return details;
+  }
+
+  function fail() {
+    if (!statusEl) return;
+    statusEl.innerHTML =
+      'Unable to load standards — check back shortly or view the ' +
+      '<a href="https://github.com/mini-app-polis/ecosystem-standards" target="_blank" rel="noreferrer" ' +
+      'class="text-slate-300 underline hover:text-slate-100">repo directly</a>.';
+  }
+
+  async function load() {
+    const base = (document.documentElement.dataset.apiUrl || "").replace(/\/$/, "");
+    if (!base || !domainsEl || !contentEl || !statusEl || !countsEl) {
+      fail();
+      return;
+    }
+    try {
+      const res = await fetch(`${base}/v1/standards/catalog`, { cache: "no-store" });
+      if (!res.ok) {
+        fail();
+        return;
+      }
+      const rules = (await res.json())?.data?.rules;
+      if (!Array.isArray(rules) || rules.length === 0) {
+        fail();
+        return;
+      }
+
+      const byDomain = new Map();
+      rules.forEach((rule) => {
+        const key = rule.domain || "other";
+        const bucket = byDomain.get(key);
+        if (bucket) bucket.push(rule);
+        else byDomain.set(key, [rule]);
+      });
+
+      const checkable = rules.filter((rule) => rule.checkable).length;
+      countsEl.textContent = `${rules.length} rules · ${checkable} checkable`;
+
+      [...byDomain.entries()]
+        .map(([key, domainRules]) => [titleCase(key), domainRules])
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .forEach(([label, domainRules]) => domainsEl.appendChild(domainSection(label, domainRules)));
+
+      statusEl.classList.add("hidden");
+      contentEl.classList.remove("hidden");
+    } catch {
+      fail();
+    }
+  }
+
+  load();
+</script>

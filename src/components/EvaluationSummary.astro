@@ -1,5 +1,5 @@
 ---
-import { fetchVersion } from "../lib/standards";
+import StandardsVersion from "./StandardsVersion.astro";
 
 // Build-time render of the current ecosystem-standards repo version.
 // This is the version of the spec these checks are evaluating against,
@@ -7,7 +7,6 @@ import { fetchVersion } from "../lib/standards";
 // `standards_version` field. The per-finding value still appears on
 // the pipeline details page, where a mismatch with this repo version
 // is itself diagnostic information.
-const standardsVersion = await fetchVersion();
 ---
 
 <section
@@ -65,7 +64,7 @@ const standardsVersion = await fetchVersion();
   </div>
 
   <p class="mt-4 text-xs text-slate-500" data-eval-footer>
-    Evaluated by Claude · Standards {standardsVersion ? `v${standardsVersion}` : "v—"}
+    Evaluated by Claude · Standards <StandardsVersion />
   </p>
 
   <script>

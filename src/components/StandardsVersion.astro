@@ -1,0 +1,39 @@
+---
+/**
+ * The standards version badge.
+ *
+ * Answers "what version is the catalog right now" — deliberately distinct
+ * from a finding's pinned `standards_version`, which answers "what was
+ * this run graded against". Drift between the two is real information, so
+ * the badge must not be sourced from findings.
+ *
+ * Filled in the browser rather than at build time. Nothing rebuilds this
+ * site when the standards release, so a build-time value would sit as
+ * stale as the last deploy while claiming to be current.
+ *
+ * Renders `v—` until the catalog answers, and keeps `v—` if it cannot.
+ * An unknown version is honest; a wrong one is not.
+ */
+---
+
+<span data-standards-version>v—</span>
+
+<script>
+  const BASE = (document.documentElement.dataset.apiUrl || "").replace(/\/$/, "");
+  const targets = document.querySelectorAll("[data-standards-version]");
+  if (BASE && targets.length) {
+    fetch(`${BASE}/v1/standards/catalog`, { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        const version = json?.data?.version;
+        if (typeof version === "string" && version) {
+          targets.forEach((el) => {
+            el.textContent = `v${version}`;
+          });
+        }
+      })
+      .catch(() => {
+        /* leave the placeholder: an unknown version beats a wrong one */
+      });
+  }
+</script>

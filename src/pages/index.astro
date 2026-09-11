@@ -1,14 +1,9 @@
 ---
 import Base from "../layouts/Base.astro";
 import EvaluationSummary from "../components/EvaluationSummary.astro";
-import { fetchEcosystem, fetchVersion } from "../lib/standards";
+import { fetchEcosystem } from "../lib/standards";
+import StandardsVersion from "../components/StandardsVersion.astro";
 
-// Standards version is resolved at build time from the ecosystem-standards
-// repo's package.json — the authoritative source for "what version is the
-// repo at?" This intentionally does not read from per-finding API data,
-// which answers a different question ("what version was this run pinned
-// to?") and can drift if an upstream evaluator emits a stale value.
-const standardsVersion = await fetchVersion();
 
 // Service count surfaced on the ecosystem card is derived from
 // ecosystem.yaml at build time. Failing to fetch does not block the
@@ -93,7 +88,7 @@ const activeServiceCount =
             <span
               class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-xs text-slate-400"
             >
-              {standardsVersion ? `v${standardsVersion}` : "v—"}
+              <StandardsVersion />
             </span>
           </div>
           <p class="text-sm leading-relaxed text-slate-400">
