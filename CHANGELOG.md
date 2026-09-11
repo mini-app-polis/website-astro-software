@@ -1,3 +1,10 @@
+# [2.2.0](https://github.com/mini-app-polis/website-astro-software/compare/v2.1.3...v2.2.0) (2026-09-11)
+
+
+### Features
+
+* update to pull standards from api instead of github ([06e9eb2](https://github.com/mini-app-polis/website-astro-software/commit/06e9eb2b57ab2d4b16cfdf16340812ccf90ecb36))
+
 ## [2.1.3](https://github.com/mini-app-polis/website-astro-software/compare/v2.1.2...v2.1.3) (2026-09-09)
 
 
