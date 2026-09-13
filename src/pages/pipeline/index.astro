@@ -196,7 +196,8 @@ const subtitleHtml =
       emptySeverityCounts,
       EMISSION_SEVERITIES,
     } from "../../lib/severity";
-    import { sourceCategory, sweepCluster } from "../../lib/sources";
+    import { sweepCluster } from "../../lib/sources";
+    import { keepLatestRunPerRepoCluster } from "../../lib/latest-run";
 
     (function () {
       var root = document.querySelector("[data-pipeline-browser]");
@@ -316,103 +317,23 @@ const subtitleHtml =
         return runs;
       }
 
-      // Reduce `findings` to the latest flow run per sweep cluster
-      // (sweep sources) or the latest run per (repo, source) (per-repo
-      // sources). Rows without identifiable source / run_id pass
-      // through so unexpected data still surfaces.
-      //
-      // Naming note: the function is still called
-      // scopeToLatestRunPerRepoSource for compatibility with call
-      // sites; the behaviour is now cluster-aware.
+      // Reduce `findings` to the latest run per (repo, type). The rule
+      // and the reasoning live in lib/latest-run.ts, shared with
+      // EvaluationSummary — this filter existed twice, and when the
+      // trigger model changed both copies were wrong in the same way.
       function scopeToLatestRunPerRepoSource(findings) {
-        // First pass: for each sweep cluster, find the latest timestamp
-        // and every run_id observed at that timestamp. Using a set
-        // tolerates the (theoretical) case of multiple sibling sources
-        // writing rows at the exact same evaluated_at with different
-        // run_ids; in practice a flow uses one run_id.
-        var latestByCluster = new Map();
-        // For per-repo sources, keep the old latest-per-(repo, source)
-        // logic.
-        var latestByRepoSource = new Map();
-
-        for (var i = 0; i < findings.length; i++) {
-          var f = findings[i];
-          var source = String(f.source || "").trim();
-          if (!source) continue;
-          var runId = f.run_id != null ? String(f.run_id) : "";
-          if (!runId) continue;
-          var ts = new Date(evaluatedAt(f) || 0).getTime();
-          if (Number.isNaN(ts)) continue;
-
-          if (sourceCategory(source) === "sweep") {
-            var cluster = sweepCluster(source);
-            var existingC = latestByCluster.get(cluster);
-            if (!existingC || ts > existingC.ts) {
-              latestByCluster.set(cluster, {
-                ts: ts,
-                runIds: new Set([runId]),
-              });
-            } else if (ts === existingC.ts) {
-              existingC.runIds.add(runId);
-            }
-          } else {
-            var repo = findingRepo(f);
-            if (!repo) continue;
-            var key = repo + "\u0000" + source;
-            var existingRs = latestByRepoSource.get(key);
-            if (!existingRs || ts > existingRs.ts) {
-              latestByRepoSource.set(key, { ts: ts, runId: runId });
-            }
-          }
-        }
-
-        // Second pass: keep rows whose timestamp matches the latest for
-        // their cluster (or whose run_id is one of the latest-cluster
-        // run_ids, which handles minor within-flow timestamp drift).
-        // Per-repo rows keep the exact (repo, source, run_id) match.
-        // Rows missing classification data pass through.
-        var kept = [];
-        for (var k = 0; k < findings.length; k++) {
-          var g = findings[k];
-          var gSource = String(g.source || "").trim();
-          var gRunId = g.run_id != null ? String(g.run_id) : "";
-          if (!gSource || !gRunId) {
-            kept.push(g);
-            continue;
-          }
-          if (sourceCategory(gSource) === "sweep") {
-            var gCluster = sweepCluster(gSource);
-            var latestC = latestByCluster.get(gCluster);
-            if (!latestC) {
-              kept.push(g);
-              continue;
-            }
-            var gTs = new Date(evaluatedAt(g) || 0).getTime();
-            if (!Number.isNaN(gTs) && gTs === latestC.ts) {
-              kept.push(g);
-              continue;
-            }
-            if (latestC.runIds.has(gRunId)) {
-              kept.push(g);
-            }
-            // Older runs from this cluster are superseded; drop.
-          } else {
-            var gRepo = findingRepo(g);
-            if (!gRepo) {
-              kept.push(g);
-              continue;
-            }
-            var latestRs = latestByRepoSource.get(
-              gRepo + "\u0000" + gSource
-            );
-            if (!latestRs) {
-              kept.push(g);
-              continue;
-            }
-            if (latestRs.runId === gRunId) kept.push(g);
-          }
-        }
-        return kept;
+        return keepLatestRunPerRepoCluster(findings, {
+          repo: function (f) { return findingRepo(f); },
+          cluster: function (f) {
+            return sweepCluster(String(f.source || "").trim());
+          },
+          runId: function (f) {
+            return f.run_id != null ? String(f.run_id) : "";
+          },
+          timestamp: function (f) {
+            return new Date(evaluatedAt(f) || 0).getTime();
+          },
+        });
       }
 
       function setButtonGroup(container, attrName, value) {

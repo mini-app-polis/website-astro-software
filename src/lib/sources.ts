@@ -77,31 +77,23 @@ export function sourceToBucket(source: unknown): Exclude<Bucket, "all"> {
   return "pipeline";
 }
 
-// ── Sweep vs per-repo classification (for latest-run filtering) ───────
-//
-// Sweep sources fire as part of an orchestrated flow run that covers all
-// repos (conformance, introspection). Per-repo sources fire independently
-// per repo (pipeline eval — flow_inline/flow_hook/prefect_webhook).
-//
-// Rows without identifiable source default to sweep so they still surface.
-export type SourceCategory = "sweep" | "per-repo";
-
-export function sourceCategory(source: unknown): SourceCategory {
-  const s = String(source ?? "").trim();
-  if (s === "prefect_webhook" || s === "flow_inline" || s === "flow_hook") {
-    return "per-repo";
-  }
-  return "sweep";
-}
+// ── Run-type clustering (for latest-run filtering) ────────────────────
 
 /**
- * Sweep-cluster assignment. All sources in the same flow share a run_id
- * and evaluated_at, so a newer run of any source in the cluster supersedes
- * older runs of every source in that cluster — even if one of those
- * sources produced zero findings in the newer run. Without clustering,
- * a source with nothing to report on the current run would appear to
- * still be "latest" and stale rows would persist across standards-version
- * bumps.
+ * Sweep-cluster assignment. Sources produced by one run share a run_id and
+ * an evaluated_at, so a newer run of any member supersedes older runs of
+ * every member — even when a member produced zero findings in the newer
+ * run. Without clustering, a source with nothing to report would look like
+ * it was still "latest" and stale rows would persist across
+ * standards-version bumps.
+ *
+ * This is the second key in the latest-run filter; the first is the
+ * repository. There used to be a `sourceCategory` helper here that split
+ * sources into "sweep" (fleet-wide, one run for every repo) and "per-repo",
+ * and the filter keyed sweep sources on the cluster alone. That premise
+ * died with the nightly cron: `conformance_deterministic` now arrives both
+ * ways, from a fleet sweep and from a single repository's release. See
+ * lib/latest-run.ts.
  *
  *   deterministic: conformance_deterministic + data_quality + standards_drift
  *   llm:           conformance_llm

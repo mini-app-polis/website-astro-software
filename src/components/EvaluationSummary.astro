@@ -76,10 +76,10 @@ import StandardsVersion from "./StandardsVersion.astro";
     } from "../lib/severity";
     import {
       BUCKET_LABELS,
-      sourceCategory,
       sourceToBucket,
       sweepCluster,
     } from "../lib/sources";
+    import { keepLatestRunPerRepoCluster } from "../lib/latest-run";
 
     const root = document.querySelector("[data-eval-summary]");
     if (!root) throw new Error("EvaluationSummary root not found");
@@ -394,64 +394,16 @@ import StandardsVersion from "./StandardsVersion.astro";
             return;
           }
 
-          // For sweep sources: track the latest timestamp per cluster
-          // and all run_ids seen at that timestamp.
-          const latestByCluster = new Map();
-          // For per-repo sources: unchanged — latest run_id per (repo, source).
-          const latestByRepoSource = new Map();
-
-          for (const f of allFindings) {
-            const source = String(f?.source || "").trim();
-            if (!source) continue;
-            const runId = f?.run_id ?? null;
-            if (!runId) continue;
-            const ts = new Date(f?.evaluated_at || f?.created_at || 0).getTime();
-            if (Number.isNaN(ts)) continue;
-
-            if (sourceCategory(source) === "sweep") {
-              const cluster = sweepCluster(source);
-              const existing = latestByCluster.get(cluster);
-              if (!existing || ts > existing.ts) {
-                latestByCluster.set(cluster, {
-                  ts,
-                  runIds: new Set([runId]),
-                });
-              } else if (ts === existing.ts) {
-                existing.runIds.add(runId);
-              }
-            } else {
-              const repo = String(f?.repo || f?.repository || "").trim();
-              if (!repo) continue;
-              const key = `${repo}\u0000${source}`;
-              const existing = latestByRepoSource.get(key);
-              if (!existing || ts > existing.ts) {
-                latestByRepoSource.set(key, { ts, runId });
-              }
-            }
-          }
-
-          // Filter: sweep rows pass if their timestamp equals the
-          // latest for their cluster, or their run_id matches one of
-          // the latest-cluster run_ids. Per-repo rows keep the exact
-          // (repo, source, run_id) match. Rows missing classification
-          // data pass through.
-          const findings = allFindings.filter((f) => {
-            const source = String(f?.source || "").trim();
-            const runId = f?.run_id ?? null;
-            if (!source || !runId) return true;
-            if (sourceCategory(source) === "sweep") {
-              const cluster = sweepCluster(source);
-              const latest = latestByCluster.get(cluster);
-              if (!latest) return true;
-              const ts = new Date(f?.evaluated_at || f?.created_at || 0).getTime();
-              if (!Number.isNaN(ts) && ts === latest.ts) return true;
-              return latest.runIds.has(runId);
-            }
-            const repo = String(f?.repo || f?.repository || "").trim();
-            if (!repo) return true;
-            const latest = latestByRepoSource.get(`${repo}\u0000${source}`);
-            if (!latest) return true;
-            return latest.runId === runId;
+          // Latest run per (repo, type). See lib/latest-run.ts for why
+          // this is keyed on the repo now: conformance fires both as a
+          // fleet sweep and as a single repo's release, and keying on the
+          // type alone let one release blank every other repo.
+          const findings = keepLatestRunPerRepoCluster(allFindings, {
+            repo: (f) => String(f?.repo || f?.repository || ""),
+            cluster: (f) => sweepCluster(String(f?.source || "").trim()),
+            runId: (f) => (f?.run_id == null ? "" : String(f.run_id)),
+            timestamp: (f) =>
+              new Date(f?.evaluated_at || f?.created_at || 0).getTime(),
           });
 
           // Split into buckets
