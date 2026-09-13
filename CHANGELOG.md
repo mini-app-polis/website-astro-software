@@ -1,3 +1,10 @@
+## [2.2.1](https://github.com/mini-app-polis/website-astro-software/compare/v2.2.0...v2.2.1) (2026-09-13)
+
+
+### Bug Fixes
+
+* calling eval on release ([63ae9fa](https://github.com/mini-app-polis/website-astro-software/commit/63ae9fae87823966385b2f71ef6c7f2b2d5d0639))
+
 # [2.2.0](https://github.com/mini-app-polis/website-astro-software/compare/v2.1.3...v2.2.0) (2026-09-11)
 
 
