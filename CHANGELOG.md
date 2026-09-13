@@ -1,3 +1,10 @@
+## [2.2.2](https://github.com/mini-app-polis/website-astro-software/compare/v2.2.1...v2.2.2) (2026-09-13)
+
+
+### Bug Fixes
+
+* show the latest findings per repo, not per run type ([65632c3](https://github.com/mini-app-polis/website-astro-software/commit/65632c31631a9c9dbbcdfc3fc04e0fb6bb85e0a0))
+
 ## [2.2.1](https://github.com/mini-app-polis/website-astro-software/compare/v2.2.0...v2.2.1) (2026-09-13)
 
 
