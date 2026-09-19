@@ -1,3 +1,15 @@
+# [2.3.0](https://github.com/mini-app-polis/website-astro-software/compare/v2.2.2...v2.3.0) (2026-09-19)
+
+
+### Bug Fixes
+
+* **deps:** bump the js-minor-and-patch group with 2 updates ([5fb54f3](https://github.com/mini-app-polis/website-astro-software/commit/5fb54f34fe09b472156f2336df1367efadbb41e6))
+
+
+### Features
+
+* **pipeline:** show the evaluator version on each finding ([1a0df47](https://github.com/mini-app-polis/website-astro-software/commit/1a0df475fc48cd704dda2068e032d97cd8bc1344))
+
 ## [2.2.2](https://github.com/mini-app-polis/website-astro-software/compare/v2.2.1...v2.2.2) (2026-09-13)
 
 
