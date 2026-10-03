@@ -1,3 +1,11 @@
+## [2.3.3](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.2...v2.3.3) (2026-10-03)
+
+
+### Bug Fixes
+
+* **deps:** patch devalue and fast-uri; time-box the http-cache-semantics advisory ([be242ea](https://github.com/mini-app-polis/website-astro-software/commit/be242ea0f48d3207483fe3e80d944e7a4b45c312))
+* **release:** let Cloudflare Pages build the release commit ([51292b7](https://github.com/mini-app-polis/website-astro-software/commit/51292b791a2625746ff9c1510b827ae3d3401c58))
+
 ## [2.3.2](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.1...v2.3.2) (2026-09-28)
 
 
