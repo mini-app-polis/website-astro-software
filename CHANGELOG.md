@@ -1,3 +1,10 @@
+## [2.3.4](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.3...v2.3.4) (2026-10-06)
+
+
+### Bug Fixes
+
+* **deps:** patch sharp and source-map-js; clear http-cache-semantics ignore ([4fd13bb](https://github.com/mini-app-polis/website-astro-software/commit/4fd13bb4562670a6c4d829658e559621647f4e3c))
+
 ## [2.3.3](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.2...v2.3.3) (2026-10-03)
 
 
