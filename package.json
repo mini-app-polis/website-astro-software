@@ -6,7 +6,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "check": "astro check"
+    "check": "astro check",
+    "test:contract": "node --test \"tests/contract/*.test.mjs\""
   },
   "repository": "https://github.com/mini-app-polis/website-astro-software.git",
   "keywords": [],
