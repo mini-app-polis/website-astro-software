@@ -1,3 +1,10 @@
+## [2.3.5](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.4...v2.3.5) (2026-10-09)
+
+
+### Bug Fixes
+
+* **evaluations:** read the total from the envelope's meta ([eda62bf](https://github.com/mini-app-polis/website-astro-software/commit/eda62bf707b475287bbe5d60d4580f0970db0369))
+
 ## [2.3.4](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.3...v2.3.4) (2026-10-06)
 
 
