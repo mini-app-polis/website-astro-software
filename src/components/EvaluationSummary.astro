@@ -347,7 +347,8 @@ import StandardsVersion from "./StandardsVersion.astro";
       // already filters server-side to "latest run per (repo, source)" via
       // its eligibility subquery, so the envelope's `total` is the bounded
       // count of rows we need to pull. Using the envelope `total` lets us
-      // stop cleanly rather than hoping a single large limit is enough.
+      // stop cleanly rather than hoping a single large limit is enough. The
+      // count is in the envelope's meta, not at its top level.
       async function fetchAllEvaluations() {
         const PAGE_SIZE = 500; // API cap
         const SAFETY_CAP = 5000;
@@ -364,7 +365,7 @@ import StandardsVersion from "./StandardsVersion.astro";
         const firstData = firstJson?.data ?? [];
         if (!Array.isArray(firstData)) return null;
         collected.push(...firstData);
-        const total = Number(firstJson?.total ?? firstData.length);
+        const total = Number(firstJson?.meta?.total ?? firstData.length);
         offset = collected.length;
 
         // Remaining pages — bounded by total and safety cap. The inner
