@@ -1,0 +1,102 @@
+name: site
+
+# Smoke-tests the site once Cloudflare Pages has deployed a push to dev or
+# main (CD-032) — the dev build against the dev API, production against the
+# production API. Pages builds on its own, outside Actions, and reports
+# through the "Cloudflare Pages" check on the commit; this waits for that
+# check and tests the deploy's own preview URL (<hash>.<project>.pages.dev) —
+# exactly this commit's build, so a cache can't pass a stale one. It makes
+# sure the build:
+#   - serves the home page and every top-level page in the nav;
+#   - is built to call this environment's API (<html data-api-url>), and the
+#     API answers /health. Every panel on the site is fetched in the browser
+#     from that URL and falls back to empty on any failure, so a missing or
+#     wrong PUBLIC_API_URL builds fine and ships a site with nothing in it;
+#   - carries a Turnstile site key on the pages that gate on one (/booking/,
+#     /resume/). PUBLIC_TURNSTILE_SITE_KEY falls back to "" too, which
+#     renders a widget that can never pass.
+# All of it is read-only, so it is safe against production.
+# PUBLIC_API_URL and PUBLIC_TURNSTILE_SITE_KEY are baked in at build time
+# from the Pages settings, so a wrong value shows up here and nowhere else —
+# CI builds with its own value, not Pages'.
+#
+# It runs on pushes. Not on the promotion pull request to main: its head is
+# dev's latest commit, already tested by the push run, whose result the pull
+# request shows. semantic-release's own commit to main is marked
+# [skip actions], so a release is checked once, at the merge.
+# Modelled on website-astro-wcs's site.yml.
+
+on:
+  push:
+    branches: [dev, main]
+
+permissions:
+  contents: read
+  checks: read
+
+concurrency:
+  group: site-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  API: ${{ github.ref == 'refs/heads/main' && 'https://api.kaianolevine.com' || 'https://dev-api.kaianolevine.com' }}
+  SHA: ${{ github.sha }}
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Wait for Cloudflare Pages to deploy this commit
+        id: deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          check() {
+            gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/check-runs?check_name=Cloudflare%20Pages" --jq "$1"
+          }
+          for _ in $(seq 1 60); do
+            read -r status conclusion <<<"$(check '.check_runs[0] // {} | "\(.status // "missing") \(.conclusion // "")"')"
+            if [ "$status" = completed ]; then
+              if [ "$conclusion" = success ]; then
+                # The check's summary lists the deploy's own preview URL
+                # (<8-hex-hash>.<project>.pages.dev) before the branch alias.
+                url=$(check '.check_runs[0].output.summary' | grep -oE 'https://[0-9a-f]{8}\.[a-z0-9-]+\.pages\.dev' | head -n 1 || true)
+                if [ -z "$url" ]; then echo "::error::The Cloudflare Pages check did not report a preview URL."; exit 1; fi
+                echo "Deployed at $url."
+                echo "site=$url" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              echo "::error::The Cloudflare Pages deploy of $SHA concluded '$conclusion'."
+              exit 1
+            fi
+            sleep 15
+          done
+          echo "::error::No finished Cloudflare Pages deploy for $SHA after 15 minutes."
+          exit 1
+
+      - name: Smoke-test the site
+        env:
+          SITE: ${{ steps.deploy.outputs.site }}
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+          get() { curl -fsSL --retry 3 "$SITE$1"; }
+
+          html=$(get /) || fail "$SITE/ did not load."
+          api=$(grep -oE 'data-api-url="[^"]*"' <<<"$html" | head -n 1 | sed -E 's/^data-api-url="(.*)"$/\1/' || true)
+          [ -n "$api" ] || fail "$SITE/ is built with no API URL (data-api-url) — PUBLIC_API_URL is unset in Pages."
+          [ "${api%/}" = "$API" ] || fail "$SITE/ is built to call $api; this environment needs $API."
+
+          for path in /ecosystem/ /pipeline/ /pipeline/summary/ /standards/ /repos/ /flags/ /products/; do
+            get "$path" >/dev/null || fail "A deep link ($SITE$path) did not load."
+          done
+
+          for path in /booking/ /resume/; do
+            page=$(get "$path") || fail "$SITE$path did not load."
+            grep -qE 'data-sitekey="[^"]+"' <<<"$page" \
+              || fail "$SITE$path renders no Turnstile site key — PUBLIC_TURNSTILE_SITE_KEY is unset in Pages."
+          done
+
+          curl -fsS -o /dev/null --retry 3 "$API/health" || fail "$API/health did not answer."
+          echo "Site OK at $SITE (calls $API)"
