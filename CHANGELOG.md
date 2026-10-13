@@ -1,3 +1,10 @@
+## [2.3.6](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.5...v2.3.6) (2026-10-13)
+
+
+### Bug Fixes
+
+* remove wramgler file ([3629ae6](https://github.com/mini-app-polis/website-astro-software/commit/3629ae61961bf4b014741e78db3d5852943a6b1b))
+
 ## [2.3.5](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.4...v2.3.5) (2026-10-09)
 
 
