@@ -1,3 +1,10 @@
+## [2.3.7](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.6...v2.3.7) (2026-10-16)
+
+
+### Bug Fixes
+
+* show queue_consumer runs and Lambda hosts; link deejaytools.com ([68710e7](https://github.com/mini-app-polis/website-astro-software/commit/68710e756151db3e3cc200d85b404b26ded38e1e))
+
 ## [2.3.6](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.5...v2.3.6) (2026-10-13)
 
 
