@@ -40,6 +40,8 @@ npm run check
 | Variable | Description |
 |---|---|
 | `PUBLIC_API_URL` | Base URL for the FastAPI service (must be publicly reachable from the browser) |
+| `PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key for the gated `/booking/` and `/resume/` pages |
+| `PUBLIC_SITE_URL` | Optional. Origin used for canonical and Open Graph URLs (defaults to `https://software.kaianolevine.com`) |
 
 Example:
 ```
@@ -66,7 +68,7 @@ Never manually edit `package.json` version or `CHANGELOG.md`. Both are managed a
 ## Deploy (Cloudflare Pages)
 
 1. Connect this Git repository in Cloudflare Pages.
-2. Set `PUBLIC_API_URL` in Pages environment variables (not as a secret — it's build-time and baked into JS).
+2. Set `PUBLIC_API_URL` and `PUBLIC_TURNSTILE_SITE_KEY` in Pages environment variables (not as secrets — they're build-time and baked into the HTML/JS).
 3. Build command: `astro build`
 4. Output directory: `dist`
 
@@ -76,13 +78,9 @@ The frontend makes browser requests directly to `PUBLIC_API_URL`, so the API mus
 
 ### Endpoints called client-side
 
-- `GET /v1/stats/overview`
-- `GET /v1/sets`
-- `GET /v1/sets/:id`
-- `GET /v1/stats/top-artists`
-- `GET /v1/stats/top-tracks`
-- `GET /v1/evaluations/summary`
 - `GET /v1/evaluations`
 - `GET /v1/flags`
-- `GET /v1/live-plays`
-- `GET /v1/spotify/playlists`
+- `GET /v1/github/status`
+- `GET /v1/standards/catalog`
+
+`/resume/` also links to `GET /v1/resume` (a navigation, not a fetch).
