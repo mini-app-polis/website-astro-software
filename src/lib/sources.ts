@@ -5,12 +5,12 @@
  * the "PIPELINE_EVALUATIONS.SOURCE — CANONICAL VALUES" banner at the
  * bottom of that file.
  *
- * Seven authoritative values:
+ * Six authoritative values:
  *
  *   External emission origins (set by the emitting cog):
  *     flow_inline         end-of-run self-assessment from a pipeline cog
- *     flow_hook           on_failure / on_crashed hook from a pipeline cog
- *     prefect_webhook     evaluator-cog webhook observer
+ *     queue_consumer      a cog's queue consumer, about a message that never
+ *                         became a run (unreadable, or failed before a flow)
  *
  *   Evaluator-cog conformance (repo structure vs standards catalog):
  *     conformance_deterministic   deterministic path of conformance flow
@@ -23,12 +23,15 @@
  * Legacy alias: `conformance_check` = old name for `conformance_llm`.
  * Pre-rename rows still live in the DB under this name, so every consumer
  * must treat the two as equivalent.
+ *
+ * Retired: `flow_hook` and `prefect_webhook` (Prefect mechanisms, replaced
+ * by `queue_consumer` in ecosystem-standards ADR-009). Old rows may still
+ * carry them; they fall into the `pipeline` bucket as unknown sources do.
  */
 
 export const CANONICAL_SOURCES = [
   "flow_inline",
-  "flow_hook",
-  "prefect_webhook",
+  "queue_consumer",
   "conformance_deterministic",
   "conformance_llm",
   "standards_drift",
@@ -42,7 +45,7 @@ export const LEGACY_LLM_ALIAS = "conformance_check";
 
 // ── Bucket model (used by EvaluationSummary and the pipeline page) ────
 //
-// Buckets group the seven sources into four human-meaningful runtime
+// Buckets group the six sources into four human-meaningful runtime
 // categories for the UI. "all" is a synthetic aggregate.
 export const BUCKETS = [
   "all",
@@ -71,8 +74,7 @@ export function sourceToBucket(source: unknown): Exclude<Bucket, "all"> {
   const s = String(source ?? "").trim();
   if (s === "conformance_deterministic") return "deterministic";
   if (s === "conformance_llm" || s === LEGACY_LLM_ALIAS) return "llm";
-  if (s === "flow_inline" || s === "flow_hook" || s === "prefect_webhook")
-    return "pipeline";
+  if (s === "flow_inline" || s === "queue_consumer") return "pipeline";
   if (s === "standards_drift" || s === "data_quality") return "introspection";
   return "pipeline";
 }
@@ -131,9 +133,8 @@ export function sourceLabel(source: unknown): string | null {
   const s = String(source ?? "").trim();
   if (!s) return null;
   // Pipeline-eval sources (behavioral — did a run behave correctly?)
-  if (s === "prefect_webhook") return "automation";
-  if (s === "flow_hook") return "crash hook";
   if (s === "flow_inline") return "pipeline";
+  if (s === "queue_consumer") return "queue consumer";
   // Conformance sources (structural — does the repo meet the standards?)
   if (s === "conformance_deterministic") return "deterministic";
   if (s === "conformance_llm") return "llm";

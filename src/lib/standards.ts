@@ -220,5 +220,6 @@ export const HOST_LABELS: Record<string, string> = {
   railway: "Railway",
   "cloudflare-pages": "Cloudflare Pages",
   github: "GitHub",
-  "prefect-cloud": "Prefect Cloud",
+  "aws-lambda": "AWS Lambda",
+  aws: "AWS",
 };

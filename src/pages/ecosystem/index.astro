@@ -28,8 +28,8 @@ const GITHUB_ORG = "mini-app-polis";
 function repoUrl(svc: EcosystemService): string | null {
   // Shared-library entries without a host don't need a repo card link
   // unless they're actually a repo we own. A missing host on a shared
-  // library that IS one of our repos (common-python-utils,
-  // common-typescript-utils) still gets a GitHub link.
+  // library that IS one of our repos (e.g. common-python-utils) still
+  // gets a GitHub link.
   const repo = svc.repo ?? svc.id;
   if (!repo) return null;
   return `https://github.com/${GITHUB_ORG}/${repo}`;
@@ -41,7 +41,7 @@ function publicUrl(svc: EcosystemService): string | null {
   if (svc.id === "api-kaianolevine-com") return "https://api.kaianolevine.com";
   if (svc.id === "website-astro-software") return "https://software.kaianolevine.com";
   if (svc.id === "website-astro-wcs") return "https://wcs.kaianolevine.com";
-  if (svc.id === "deejaytools-com-app") return "https://deejaytools.com";
+  if (svc.id === "deejaytools-com") return "https://deejaytools.com";
   return null;
 }
 

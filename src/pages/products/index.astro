@@ -25,9 +25,9 @@ const PRODUCTS: ProductCardProps[] = [
     url: "https://wcs.kaianolevine.com",
     tagline: "DJ sets, live music data, and lesson booking",
     description:
-      "The public front door for my West Coast Swing work as DJ Marvel and an instructor in the Twin Cities. Full DJ set history, live play statistics, event and venue information, music submission tools, and private lesson booking. The music views are not static — they query api.kaianolevine.com live, backed by a Prefect ingestion pipeline that normalizes and loads set data into PostgreSQL after every event.",
+      "The public front door for my West Coast Swing work as DJ Marvel and an instructor in the Twin Cities. Full DJ set history, live play statistics, event and venue information, music submission tools, and private lesson booking. The music views are not static — they query api.kaianolevine.com live, backed by a queue-driven ingestion pipeline (SQS + AWS Lambda) that normalizes and loads set data into PostgreSQL after every event.",
     role: "Design, build, deploy, and the data pipeline behind it",
-    stack: ["Astro", "Tailwind", "Cloudflare Pages", "FastAPI", "PostgreSQL", "Prefect"],
+    stack: ["Astro", "Tailwind", "Cloudflare Pages", "FastAPI", "PostgreSQL", "AWS Lambda"],
     status: "Live",
     accent: "violet",
   },
