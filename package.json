@@ -1,6 +1,6 @@
 {
   "name": "website-astro-software",
-  "version": "2.3.8",
+  "version": "2.3.9",
   "description": "Technical portfolio powered by live engineering data.",
   "scripts": {
     "dev": "astro dev",

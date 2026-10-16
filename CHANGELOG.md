@@ -1,3 +1,10 @@
+## [2.3.9](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.8...v2.3.9) (2026-10-16)
+
+
+### Bug Fixes
+
+* **ci:** follow a newer branch deploy when Pages skips this commit's build ([1dbf94f](https://github.com/mini-app-polis/website-astro-software/commit/1dbf94ff9dd025e2617c2c3772b7a678496c7002))
+
 ## [2.3.8](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.7...v2.3.8) (2026-10-16)
 
 
