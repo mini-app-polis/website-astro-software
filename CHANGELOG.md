@@ -1,3 +1,10 @@
+## [2.3.10](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.9...v2.3.10) (2026-10-20)
+
+
+### Bug Fixes
+
+* **security:** escape API-supplied strings rendered via innerHTML ([3d2c08f](https://github.com/mini-app-polis/website-astro-software/commit/3d2c08f7119b1c49a7221bce9f9a259f59f45a9c))
+
 ## [2.3.9](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.8...v2.3.9) (2026-10-16)
 
 
