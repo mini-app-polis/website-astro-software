@@ -80,6 +80,7 @@ import StandardsVersion from "./StandardsVersion.astro";
       sweepCluster,
     } from "../lib/sources";
     import { keepLatestRunPerRepoCluster } from "../lib/latest-run";
+    import { esc } from "../lib/repos";
 
     const root = document.querySelector("[data-eval-summary]");
     if (!root) throw new Error("EvaluationSummary root not found");
@@ -327,7 +328,7 @@ import StandardsVersion from "./StandardsVersion.astro";
           row.innerHTML = `
             <div class="min-w-0">
               <div class="${item.mono ? "font-mono" : ""} text-sm font-medium text-slate-100">
-                ${item.label}
+                ${esc(item.label)}
               </div>
               <div class="mt-1 text-sm">
                 ${tags}

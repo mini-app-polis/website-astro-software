@@ -18,6 +18,7 @@
   <script>
     import { normalizeSeverity, severityClass } from "../lib/severity";
     import { sourceLabel } from "../lib/sources";
+    import { esc } from "../lib/repos";
 
     const root = document.querySelector("[data-recent-findings]");
     if (!root) throw new Error("RecentFindings root not found");
@@ -141,13 +142,13 @@
                 : "";
             const src = sourceLabel(f?.source);
             const sourceBadge = src
-              ? `<span class="inline-flex items-center rounded-full border border-slate-600/40 bg-slate-700/30 px-2 py-0.5 text-[11px] font-mono text-slate-400">${src}</span>`
+              ? `<span class="inline-flex items-center rounded-full border border-slate-600/40 bg-slate-700/30 px-2 py-0.5 text-[11px] font-mono text-slate-400">${esc(src)}</span>`
               : "";
             const flowBadge = f?.flow_name
-              ? `<span class="inline-flex items-center rounded-full border border-slate-600/40 bg-slate-700/30 px-2 py-0.5 text-[11px] font-mono text-slate-400">${f.flow_name}</span>`
+              ? `<span class="inline-flex items-center rounded-full border border-slate-600/40 bg-slate-700/30 px-2 py-0.5 text-[11px] font-mono text-slate-400">${esc(f.flow_name)}</span>`
               : "";
             const repoBadge = f?.repo
-              ? `<span class="inline-flex items-center rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-0.5 text-[11px] font-mono text-violet-300">${f.repo}</span>`
+              ? `<span class="inline-flex items-center rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-0.5 text-[11px] font-mono text-violet-300">${esc(f.repo)}</span>`
               : "";
 
             row.innerHTML = `
@@ -163,12 +164,10 @@
                 </div>
                 <div class="text-xs text-slate-400">${relativeTime(timestamp)}</div>
               </div>
-              <div class="mt-2 text-sm font-medium text-slate-200">${formatDimension(
-                f?.dimension,
-              ) || "Unknown Dimension"}</div>
-              <p class="mt-1 text-sm text-slate-400 overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">${String(
-                findingText,
-              )}</p>
+              <div class="mt-2 text-sm font-medium text-slate-200">${esc(
+                formatDimension(f?.dimension) || "Unknown Dimension",
+              )}</div>
+              <p class="mt-1 text-sm text-slate-400 overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">${esc(findingText)}</p>
             `;
             listEl.appendChild(row);
           });

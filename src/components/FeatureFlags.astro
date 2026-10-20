@@ -85,13 +85,19 @@
           row.className = "reveal rounded-lg border border-white/5 bg-black/10 px-4 py-3";
           row.style.setProperty("--d", `${idx * 80}ms`);
 
+          // Static markup only; API-supplied name and description go in via
+          // textContent so they can never be parsed as HTML.
           row.innerHTML = `
             <div class="flex items-center justify-between gap-3">
-              <h4 class="font-medium text-slate-100">${formatFlagName(flag?.name)}</h4>
+              <h4 class="font-medium text-slate-100" data-flag-name></h4>
               ${stateMarkup(Boolean(flag?.enabled))}
             </div>
-            <p class="mt-2 text-sm text-slate-400">${String(flag?.description ?? "")}</p>
+            <p class="mt-2 text-sm text-slate-400" data-flag-description></p>
           `;
+          row.querySelector("[data-flag-name]").textContent = formatFlagName(flag?.name);
+          row.querySelector("[data-flag-description]").textContent = String(
+            flag?.description ?? "",
+          );
           listEl.appendChild(row);
         });
       } catch {
