@@ -175,8 +175,8 @@ export function normalizeFilter(value: unknown): RepoFilter {
 
 // ── Response shapes ──────────────────────────────────────────────────────
 //
-// A hand-kept mirror of the `data` object in GET /v1/github/status, which is
-// generated from the Pydantic models in kaianolevine_api.schemas. Declared
+// A hand-kept mirror of the `data` object in GET /v1/github/status, as that
+// endpoint's response contract in api-kaianolevine-com defines it. Declared
 // here rather than inlined in the component so a field rename upstream
 // breaks the type-check in one place instead of failing silently at runtime.
 
