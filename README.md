@@ -37,16 +37,9 @@ npm run check
 
 ## Environment variables
 
-| Variable | Description |
-|---|---|
-| `PUBLIC_API_URL` | Base URL for the FastAPI service (must be publicly reachable from the browser) |
-| `PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key for the gated `/booking/` and `/resume/` pages |
-| `PUBLIC_SITE_URL` | Optional. Origin used for canonical and Open Graph URLs (defaults to `https://software.kaianolevine.com`) |
-
-Example:
-```
-PUBLIC_API_URL=https://api.kaianolevine.com
-```
+Every variable the site reads is listed, with what it does and its default,
+in [`.env.example`](.env.example). All are read at build time and baked into
+the static output, so all are public.
 
 ## Build
 
