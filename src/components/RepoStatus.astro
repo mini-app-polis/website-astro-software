@@ -93,6 +93,7 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
   </div>
 
   <script>
+    import { safeUrl } from "../lib/url";
     import {
       buildClass,
       buildDotClass,
@@ -214,7 +215,13 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
     function repoRow(repo: RepoRow, idx: number): HTMLElement {
       const state = normalizeBuild(repo.build);
       const slug = `${esc(repo.org)}/${esc(repo.name)}`;
-      const url = esc(repo.url);
+      // A repository whose url fails the scheme check renders without links.
+      const safe = safeUrl(repo.url);
+      const url = safe === null ? null : esc(safe);
+      const link = (href: string, cls: string, text: string): string =>
+        url === null
+          ? `<span class="${cls}">${text}</span>`
+          : `<a href="${href}" rel="noopener" class="${cls} hover:text-accent">${text}</a>`;
       const meta: string[] = [];
       if (repo.language) meta.push(esc(repo.language));
       if (repo.pushed_at) meta.push(`pushed ${esc(relativeTime(repo.pushed_at))}`);
@@ -227,16 +234,16 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
         <div class="min-w-0">
           <div class="flex min-w-0 items-center gap-2">
             <span class="h-2 w-2 shrink-0 rounded-full ${buildDotClass(state)}"></span>
-            <a href="${url}" rel="noopener" class="min-w-0 truncate font-medium text-slate-100 hover:text-accent">${slug}</a>
+            ${link(`${url}`, "min-w-0 truncate font-medium text-slate-100", slug)}
             <span class="shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-mono ${buildClass(state)}">${buildLabel(state)}</span>
             <span class="shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-mono ${visibilityClass(repo.private)}">${visibilityLabel(repo.private)}</span>
           </div>
           <p class="mt-1 line-clamp-2 text-sm text-slate-400">${esc(repo.description ?? "")}</p>
         </div>
         <div class="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 text-xs font-mono text-slate-400">
-          <a href="${url}/pulls" rel="noopener" class="hover:text-accent">${plural(Number(repo.open_pull_requests ?? 0), "PR", "PRs")}</a>
-          <a href="${url}/issues" rel="noopener" class="hover:text-accent">${plural(Number(repo.open_issues ?? 0), "issue", "issues")}</a>
-          <a href="${url}/branches" rel="noopener" class="hover:text-accent">${plural(Number(repo.branches ?? 0), "branch", "branches")}</a>
+          ${link(`${url}/pulls`, "", plural(Number(repo.open_pull_requests ?? 0), "PR", "PRs"))}
+          ${link(`${url}/issues`, "", plural(Number(repo.open_issues ?? 0), "issue", "issues"))}
+          ${link(`${url}/branches`, "", plural(Number(repo.branches ?? 0), "branch", "branches"))}
           <span class="text-slate-600">${meta.join(" \u00b7 ")}</span>
         </div>
       `;

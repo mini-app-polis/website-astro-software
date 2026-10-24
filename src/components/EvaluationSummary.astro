@@ -81,14 +81,20 @@ import StandardsVersion from "./StandardsVersion.astro";
     } from "../lib/sources";
     import { keepLatestRunPerRepoCluster } from "../lib/latest-run";
     import { esc } from "../lib/repos";
+    import type { Bucket } from "../lib/sources";
+    import type { Finding } from "../lib/finding";
 
-    const root = document.querySelector("[data-eval-summary]");
-    if (!root) throw new Error("EvaluationSummary root not found");
+    const rootEl = document.querySelector<HTMLElement>("[data-eval-summary]");
+    if (!rootEl) throw new Error("EvaluationSummary root not found");
+    const root: HTMLElement = rootEl;
 
-    const listEl = root.querySelector("[data-eval-summary-list]");
-    const toggleEl = root.querySelector("[data-eval-toggle]");
-    const sourceTabsEl = root.querySelector("[data-eval-source-tabs]");
-    if (!listEl || !toggleEl || !sourceTabsEl) throw new Error("EvaluationSummary elements not found");
+    const listFound = root.querySelector<HTMLElement>("[data-eval-summary-list]");
+    const toggleFound = root.querySelector<HTMLElement>("[data-eval-toggle]");
+    const sourceTabsFound = root.querySelector<HTMLElement>("[data-eval-source-tabs]");
+    if (!listFound || !toggleFound || !sourceTabsFound) throw new Error("EvaluationSummary elements not found");
+    const listEl: HTMLElement = listFound;
+    const toggleEl: HTMLElement = toggleFound;
+    const sourceTabsEl: HTMLElement = sourceTabsFound;
 
     const BASE = document.documentElement.dataset.apiUrl || "";
     if (!BASE) {
@@ -99,11 +105,11 @@ import StandardsVersion from "./StandardsVersion.astro";
 
       let currentView = "repo";
       // selectedSource is one of "all", "deterministic", "llm", "pipeline", "introspection"
-      let selectedSource = "all";
+      let selectedSource: Bucket = "all";
       // findingsByBucket: keyed by bucket name, value is array of findings.
       // Only holds the four real buckets; "all" is computed on demand from
       // the union so we don't double-store the data.
-      let findingsByBucket = {
+      let findingsByBucket: Record<Exclude<Bucket, "all">, Finding[]> = {
         deterministic: [],
         llm: [],
         pipeline: [],
@@ -112,7 +118,7 @@ import StandardsVersion from "./StandardsVersion.astro";
 
       // Return the findings for a given bucket; "all" flattens across the
       // four real buckets in a deterministic order.
-      function findingsForBucket(bucket) {
+      function findingsForBucket(bucket: Bucket): Finding[] {
         if (bucket === "all") {
           return [
             ...findingsByBucket.deterministic,
@@ -125,7 +131,7 @@ import StandardsVersion from "./StandardsVersion.astro";
       }
 
       // -- Helpers -----------------------------------------------
-      function relativeTime(iso) {
+      function relativeTime(iso: string | null | undefined): string {
         if (!iso) return "—";
         const d = new Date(iso);
         if (Number.isNaN(d.getTime())) return "—";
@@ -139,7 +145,7 @@ import StandardsVersion from "./StandardsVersion.astro";
         return rtf.format(Math.round(hr / 24), "day");
       }
 
-      function latestTs(findings) {
+      function latestTs(findings: Finding[]): number {
         let max = 0;
         for (const f of findings) {
           const t = new Date(f?.evaluated_at || f?.created_at || 0).getTime();
@@ -148,7 +154,7 @@ import StandardsVersion from "./StandardsVersion.astro";
         return max;
       }
 
-      function formatDimension(raw) {
+      function formatDimension(raw: unknown): string {
         return String(raw || "")
           .split("_")
           .filter(Boolean)
@@ -168,10 +174,10 @@ import StandardsVersion from "./StandardsVersion.astro";
       updateToggle();
 
       toggleEl.addEventListener("click", (e) => {
-        const btn = e.target.closest("button[data-view]");
+        const btn = (e.target as Element).closest("button[data-view]");
         if (!btn) return;
         const v = btn.getAttribute("data-view");
-        if (v === currentView) return;
+        if (!v || v === currentView) return;
         currentView = v;
         updateToggle();
         renderList();
@@ -181,7 +187,7 @@ import StandardsVersion from "./StandardsVersion.astro";
       function updateSourceTabs() {
         sourceTabsEl.querySelectorAll("[data-source-tab]").forEach((tab) => {
           const label = tab.getAttribute("data-source-label");
-          const bucket = Object.keys(BUCKET_LABELS).find(
+          const bucket = (Object.keys(BUCKET_LABELS) as Bucket[]).find(
             (k) => BUCKET_LABELS[k] === label
           );
           const active = bucket === selectedSource;
@@ -196,7 +202,7 @@ import StandardsVersion from "./StandardsVersion.astro";
       function populateSourceTabs() {
         sourceTabsEl.querySelectorAll("[data-source-tab]").forEach((tab) => {
           const label = tab.getAttribute("data-source-label");
-          const bucket = Object.keys(BUCKET_LABELS).find(
+          const bucket = (Object.keys(BUCKET_LABELS) as Bucket[]).find(
             (k) => BUCKET_LABELS[k] === label
           );
           if (!bucket) return;
@@ -213,10 +219,10 @@ import StandardsVersion from "./StandardsVersion.astro";
       }
 
       sourceTabsEl.addEventListener("click", (e) => {
-        const tab = e.target.closest("[data-source-tab]");
+        const tab = (e.target as Element).closest("[data-source-tab]");
         if (!tab) return;
         const label = tab.getAttribute("data-source-label");
-        const bucket = Object.keys(BUCKET_LABELS).find(
+        const bucket = (Object.keys(BUCKET_LABELS) as Bucket[]).find(
           (k) => BUCKET_LABELS[k] === label
         );
         if (!bucket || bucket === selectedSource) return;
@@ -226,14 +232,14 @@ import StandardsVersion from "./StandardsVersion.astro";
       });
 
       // -- List (By Repo / By Dimension / By Rule) ---------------
-      function aggregateByRepo(findings) {
-        const map = new Map();
+      function aggregateByRepo(findings: Finding[]) {
+        const map = new Map<string, ReturnType<typeof emptySeverityCounts> & { latestMs: number }>();
         for (const f of findings) {
           const key = String(f?.repo || f?.repository || "unknown").trim();
           const sev = normalizeSeverity(f?.severity);
           const ts = new Date(f?.evaluated_at || f?.created_at || 0).getTime();
-          if (!map.has(key)) map.set(key, { ...emptySeverityCounts(), latestMs: 0 });
-          const e = map.get(key);
+          const e = map.get(key) ?? { ...emptySeverityCounts(), latestMs: 0 };
+          map.set(key, e);
           e[sev]++;
           if (!Number.isNaN(ts) && ts > e.latestMs) e.latestMs = ts;
         }
@@ -245,14 +251,14 @@ import StandardsVersion from "./StandardsVersion.astro";
           .map(([key, counts]) => ({ label: key, mono: true, ...counts }));
       }
 
-      function aggregateByDimension(findings) {
-        const map = new Map();
+      function aggregateByDimension(findings: Finding[]) {
+        const map = new Map<string, ReturnType<typeof emptySeverityCounts> & { latestMs: number }>();
         for (const f of findings) {
           const key = String(f?.dimension || "unknown").trim();
           const sev = normalizeSeverity(f?.severity);
           const ts = new Date(f?.evaluated_at || f?.created_at || 0).getTime();
-          if (!map.has(key)) map.set(key, { ...emptySeverityCounts(), latestMs: 0 });
-          const e = map.get(key);
+          const e = map.get(key) ?? { ...emptySeverityCounts(), latestMs: 0 };
+          map.set(key, e);
           e[sev]++;
           if (!Number.isNaN(ts) && ts > e.latestMs) e.latestMs = ts;
         }
@@ -268,16 +274,16 @@ import StandardsVersion from "./StandardsVersion.astro";
       // carries the rule code (e.g. "CD-012", "EVAL-007"). Fall back to
       // `rule_id`, then dimension, then "unknown" so every finding lands
       // under some key.
-      function aggregateByRule(findings) {
-        const map = new Map();
+      function aggregateByRule(findings: Finding[]) {
+        const map = new Map<string, ReturnType<typeof emptySeverityCounts> & { latestMs: number }>();
         for (const f of findings) {
           const rawKey =
             f?.violation_id || f?.rule_id || f?.dimension || "unknown";
           const key = String(rawKey).trim() || "unknown";
           const sev = normalizeSeverity(f?.severity);
           const ts = new Date(f?.evaluated_at || f?.created_at || 0).getTime();
-          if (!map.has(key)) map.set(key, { ...emptySeverityCounts(), latestMs: 0 });
-          const e = map.get(key);
+          const e = map.get(key) ?? { ...emptySeverityCounts(), latestMs: 0 };
+          map.set(key, e);
           e[sev]++;
           if (!Number.isNaN(ts) && ts > e.latestMs) e.latestMs = ts;
         }
@@ -350,10 +356,10 @@ import StandardsVersion from "./StandardsVersion.astro";
       // count of rows we need to pull. Using the envelope `total` lets us
       // stop cleanly rather than hoping a single large limit is enough. The
       // count is in the envelope's meta, not at its top level.
-      async function fetchAllEvaluations() {
+      async function fetchAllEvaluations(): Promise<Finding[] | null> {
         const PAGE_SIZE = 500; // API cap
         const SAFETY_CAP = 5000;
-        const collected = [];
+        const collected: Finding[] = [];
         let offset = 0;
 
         // First page — reads total from envelope.

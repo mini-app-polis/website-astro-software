@@ -19,11 +19,21 @@
     import { normalizeSeverity, severityClass } from "../lib/severity";
     import { sourceLabel } from "../lib/sources";
     import { esc } from "../lib/repos";
+    import type { Finding } from "../lib/finding";
 
-    const root = document.querySelector("[data-recent-findings]");
-    if (!root) throw new Error("RecentFindings root not found");
-    const listEl = root.querySelector("[data-recent-findings-list]");
-    if (!listEl) throw new Error("RecentFindings list not found");
+    /** A finding after consecutive identical INFO rows are collapsed. */
+    type Collapsed = Finding & {
+      _repeatRuns: number;
+      _severity: string;
+      _message?: string;
+    };
+
+    const rootEl = document.querySelector<HTMLElement>("[data-recent-findings]");
+    if (!rootEl) throw new Error("RecentFindings root not found");
+    const root: HTMLElement = rootEl;
+    const listFound = root.querySelector<HTMLElement>("[data-recent-findings-list]");
+    if (!listFound) throw new Error("RecentFindings list not found");
+    const listEl: HTMLElement = listFound;
 
     const BASE = document.documentElement.dataset.apiUrl || "";
     if (!BASE) {
@@ -33,7 +43,7 @@
       const url = `${baseUrl}/v1/evaluations?limit=5`;
       const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
 
-      function formatDimension(raw) {
+      function formatDimension(raw: unknown): string {
         return String(raw ?? "")
           .split("_")
           .filter(Boolean)
@@ -41,9 +51,9 @@
           .join(" ");
       }
 
-      function relativeTime(iso) {
+      function relativeTime(iso: unknown): string {
         if (!iso) return "—";
-        const d = new Date(iso);
+        const d = new Date(String(iso));
         if (Number.isNaN(d.getTime())) return "—";
         const sec = Math.round((d.getTime() - Date.now()) / 1000);
         const abs = Math.abs(sec);
@@ -56,8 +66,8 @@
         return rtf.format(day, "day");
       }
 
-      function collapseConsecutiveInfo(rows) {
-        const collapsed = [];
+      function collapseConsecutiveInfo(rows: Finding[]): Collapsed[] {
+        const collapsed: Collapsed[] = [];
         for (const row of rows) {
           const sev = normalizeSeverity(row?.severity);
           const msg = String(row?.finding ?? row?.message ?? row?.text ?? "");
@@ -68,7 +78,7 @@
             continue;
           }
 
-          const prev = collapsed[collapsed.length - 1];
+          const prev: Collapsed | undefined = collapsed[collapsed.length - 1];
           if (
             prev &&
             prev._severity === "INFO" &&
