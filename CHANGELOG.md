@@ -1,3 +1,12 @@
+## [2.3.11](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.10...v2.3.11) (2026-10-24)
+
+
+### Bug Fixes
+
+* **deps:** patch zod, fast-uri and undici ([826699b](https://github.com/mini-app-polis/website-astro-software/commit/826699b53f8e44adbf0412a244fdec84353b506c))
+* **security:** check the scheme of repository links before rendering them ([d49ff0e](https://github.com/mini-app-polis/website-astro-software/commit/d49ff0e07ce35fc97cb246cba2ea125797925a8d))
+* **types:** clear astro check's errors and run it in CI ([251fc7f](https://github.com/mini-app-polis/website-astro-software/commit/251fc7fe1d0b4eb3b1d428f5a188c8ffd17b1074))
+
 ## [2.3.10](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.9...v2.3.10) (2026-10-20)
 
 
