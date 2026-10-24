@@ -37,19 +37,21 @@
 </div>
 
 <script>
+  import type { Rule } from "../lib/standards";
+
   const root = document.querySelector("[data-standards-root]");
   const statusEl = root?.querySelector("[data-standards-status]");
   const contentEl = root?.querySelector("[data-standards-content]");
   const countsEl = root?.querySelector("[data-standards-counts]");
   const domainsEl = root?.querySelector("[data-standards-domains]");
 
-  const SEVERITY_CLASS = {
+  const SEVERITY_CLASS: Record<string, string> = {
     CRITICAL: "text-rose-300 border-rose-500/40 bg-rose-500/15",
     ERROR: "text-red-400 border-red-500/30 bg-red-500/10",
     WARN: "text-amber-400 border-amber-500/30 bg-amber-500/10",
     SUCCESS: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
   };
-  const STATUS_CLASS = {
+  const STATUS_CLASS: Record<string, string> = {
     requirement: "text-accent border-accent/30 bg-accent/10",
     convention: "text-sky-400 border-sky-500/30 bg-sky-500/10",
     gap: "text-rose-400 border-rose-500/30 bg-rose-500/10",
@@ -57,7 +59,7 @@
   const NEUTRAL = "text-slate-300 border-slate-500/30 bg-slate-500/10";
   const PILL = "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-mono";
 
-  function titleCase(key) {
+  function titleCase(key: string): string {
     return (
       String(key)
         .split(/[-_]/)
@@ -67,14 +69,14 @@
     );
   }
 
-  function pill(text, classes, extra = "") {
+  function pill(text: string, classes: string, extra = ""): HTMLSpanElement {
     const span = document.createElement("span");
     span.className = `${PILL} ${classes} ${extra}`.trim();
     span.textContent = text;
     return span;
   }
 
-  function ruleRow(rule) {
+  function ruleRow(rule: Rule): HTMLDivElement {
     const row = document.createElement("div");
     row.className = "space-y-1.5 px-4 py-3";
 
@@ -117,7 +119,7 @@
     return row;
   }
 
-  function domainSection(label, rules) {
+  function domainSection(label: string, rules: Rule[]): HTMLDetailsElement {
     const details = document.createElement("details");
     details.className = "group rounded-xl border border-white/10 bg-white/[0.02]";
 
@@ -134,8 +136,8 @@
       </svg>`;
     // Addressed by attribute rather than by position: a structural selector
     // here breaks silently the next time the summary markup gains a span.
-    summary.querySelector("[data-label]").textContent = label;
-    summary.querySelector("[data-count]").textContent = `${rules.length} rules`;
+    summary.querySelector("[data-label]")!.textContent = label;
+    summary.querySelector("[data-count]")!.textContent = `${rules.length} rules`;
     details.appendChild(summary);
 
     const body = document.createElement("div");
@@ -166,13 +168,13 @@
         fail();
         return;
       }
-      const rules = (await res.json())?.data?.rules;
+      const rules: Rule[] | undefined = (await res.json())?.data?.rules;
       if (!Array.isArray(rules) || rules.length === 0) {
         fail();
         return;
       }
 
-      const byDomain = new Map();
+      const byDomain = new Map<string, Rule[]>();
       rules.forEach((rule) => {
         const key = rule.domain || "other";
         const bucket = byDomain.get(key);
@@ -184,7 +186,7 @@
       countsEl.textContent = `${rules.length} rules · ${checkable} checkable`;
 
       [...byDomain.entries()]
-        .map(([key, domainRules]) => [titleCase(key), domainRules])
+        .map(([key, domainRules]): [string, Rule[]] => [titleCase(key), domainRules])
         .sort((a, b) => a[0].localeCompare(b[0]))
         .forEach(([label, domainRules]) => domainsEl.appendChild(domainSection(label, domainRules)));
 

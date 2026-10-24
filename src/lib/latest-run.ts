@@ -37,20 +37,22 @@
  * through rather than being dropped. Being unable to tell whether something
  * is current is not evidence that it is stale.
  *
- * @template T
- * @param {T[]} findings
- * @param {{
- *   repo: (f: T) => string,
- *   cluster: (f: T) => string,
- *   runId: (f: T) => string,
- *   timestamp: (f: T) => number,
- * }} read Accessors, because callers disagree about field names
- *   (repo vs repository, evaluated_at vs created_at).
- * @returns {T[]} the subset belonging to the newest run of each
- *   (repository, cluster) pair.
+ * `read` holds accessors, because callers disagree about field names
+ * (repo vs repository, evaluated_at vs created_at). Returns the subset
+ * belonging to the newest run of each (repository, cluster) pair.
  */
-export function keepLatestRunPerRepoCluster(findings, read) {
-  const latest = new Map();
+export interface RunAccessors<T> {
+  repo: (f: T) => unknown;
+  cluster: (f: T) => unknown;
+  runId: (f: T) => unknown;
+  timestamp: (f: T) => number;
+}
+
+export function keepLatestRunPerRepoCluster<T>(
+  findings: T[],
+  read: RunAccessors<T>,
+): T[] {
+  const latest = new Map<string, { ts: number; runIds: Set<string> }>();
 
   for (const f of findings) {
     const key = classify(f, read);
@@ -82,7 +84,7 @@ export function keepLatestRunPerRepoCluster(findings, read) {
 }
 
 /** The (repository, cluster) key, or null when the row cannot be classified. */
-function classify(f, read) {
+function classify<T>(f: T, read: RunAccessors<T>): string | null {
   const repo = String(read.repo(f) || "").trim();
   const cluster = String(read.cluster(f) || "").trim();
   const runId = String(read.runId(f) || "").trim();

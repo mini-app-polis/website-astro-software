@@ -198,21 +198,25 @@ const subtitleHtml =
     } from "../../lib/severity";
     import { sweepCluster } from "../../lib/sources";
     import { keepLatestRunPerRepoCluster } from "../../lib/latest-run";
+    import type { Finding } from "../../lib/finding";
 
     (function () {
       var root = document.querySelector("[data-pipeline-browser]");
       if (!root) return;
 
-      var listEl = document.getElementById("pipelineFindingsList");
-      var emptyEl = document.getElementById("pipelineFindingsEmpty");
-      var loadMoreBtn = document.getElementById("pipelineLoadMore");
+      var listFound = document.getElementById("pipelineFindingsList");
+      var emptyFound = document.getElementById("pipelineFindingsEmpty");
+      var loadMoreFound = document.getElementById("pipelineLoadMore") as HTMLButtonElement | null;
       var countsEl = document.getElementById("pipelineFindingsCounts");
-      if (!listEl || !emptyEl || !loadMoreBtn) return;
+      if (!listFound || !emptyFound || !loadMoreFound) return;
+      const listEl: HTMLElement = listFound;
+      const emptyEl: HTMLElement = emptyFound;
+      const loadMoreBtn: HTMLButtonElement = loadMoreFound;
 
       var BASE = document.documentElement.dataset.apiUrl || "";
       var baseUrl = String(BASE).replace(/\/$/, "");
 
-      var allFindings = [];
+      var allFindings: Finding[] = [];
       var nextOffset = 0;
       var pageSize = 200;
       var hasMore = false;
@@ -233,11 +237,13 @@ const subtitleHtml =
         hour12: true,
       });
 
-      function evaluatedAt(f) {
-        return f.evaluated_at || f.created_at || f.timestamp || f.most_recent || null;
+      function evaluatedAt(f: Finding): string | null {
+        return (f.evaluated_at || f.created_at || f.timestamp || f.most_recent || null) as
+          | string
+          | null;
       }
 
-      function formatDimension(raw) {
+      function formatDimension(raw: unknown): string {
         return String(raw || "")
           .split("_")
           .filter(Boolean)
@@ -247,23 +253,23 @@ const subtitleHtml =
           .join(" ");
       }
 
-      function findingRepo(f) {
+      function findingRepo(f: Finding): string {
         return String(f.repo || f.repository || "").trim();
       }
 
-      function findingDimension(f) {
+      function findingDimension(f: Finding): string {
         return String(f.dimension || "").trim();
       }
 
-      function findingText(f) {
+      function findingText(f: Finding): string {
         return String(f.finding || f.message || f.text || "");
       }
 
-      function suggestionText(f) {
+      function suggestionText(f: Finding): string {
         return String(f.suggestion || f.suggested_fix || f.remediation || "").trim();
       }
 
-      function filterFindings(items) {
+      function filterFindings(items: Finding[]): Finding[] {
         return items.filter(function (f) {
           if (selectedSeverity) {
             if (normalizeSeverity(f.severity) !== selectedSeverity) return false;
@@ -294,15 +300,15 @@ const subtitleHtml =
         });
       }
 
-      function groupByRun(findings) {
-        var map = new Map();
+      function groupByRun(findings: Finding[]) {
+        var map = new Map<string, Finding[]>();
         for (var i = 0; i < findings.length; i++) {
           var f = findings[i];
           var rid = f.run_id != null ? String(f.run_id) : "unknown";
           if (!map.has(rid)) map.set(rid, []);
-          map.get(rid).push(f);
+          map.get(rid)!.push(f);
         }
-        var runs = [];
+        var runs: { runId: string; items: Finding[]; maxTs: number }[] = [];
         map.forEach(function (items, runId) {
           var maxTs = 0;
           for (var j = 0; j < items.length; j++) {
@@ -321,7 +327,7 @@ const subtitleHtml =
       // and the reasoning live in lib/latest-run.ts, shared with
       // EvaluationSummary — this filter existed twice, and when the
       // trigger model changed both copies were wrong in the same way.
-      function scopeToLatestRunPerRepoSource(findings) {
+      function scopeToLatestRunPerRepoSource(findings: Finding[]): Finding[] {
         return keepLatestRunPerRepoCluster(findings, {
           repo: function (f) { return findingRepo(f); },
           cluster: function (f) {
@@ -336,7 +342,8 @@ const subtitleHtml =
         });
       }
 
-      function setButtonGroup(container, attrName, value) {
+      function setButtonGroup(container: Element | null, attrName: string, value: string) {
+        if (!container) return;
         var btns = container.querySelectorAll("button[" + attrName + "]");
         for (var i = 0; i < btns.length; i++) {
           var btn = btns[i];
@@ -347,9 +354,10 @@ const subtitleHtml =
         }
       }
 
-      function buildRepoButtons(findings) {
-        var repos = [];
-        var seen = {};
+      function buildRepoButtons(findings: Finding[]) {
+        if (!repoWrap) return;
+        var repos: string[] = [];
+        var seen: Record<string, boolean> = {};
         for (var i = 0; i < findings.length; i++) {
           var r = findingRepo(findings[i]);
           if (r && !seen[r]) {
@@ -379,10 +387,10 @@ const subtitleHtml =
         }
       }
 
-      function buildDimensionButtons(findings) {
+      function buildDimensionButtons(findings: Finding[]) {
         if (!dimWrap) return;
-        var dims = [];
-        var seen = {};
+        var dims: string[] = [];
+        var seen: Record<string, boolean> = {};
         for (var i = 0; i < findings.length; i++) {
           var d = findingDimension(findings[i]);
           if (d && !seen[d]) {
@@ -416,7 +424,7 @@ const subtitleHtml =
       // findings. All five severity buckets are always shown — at zero
       // they render in muted color so the row has a stable shape.
       // Matches the visual weight of the EvaluationSummary source cards.
-      function renderCounts(filtered) {
+      function renderCounts(filtered: Finding[]) {
         if (!countsEl) return;
         var counts = emptySeverityCounts();
         for (var i = 0; i < filtered.length; i++) {
@@ -488,8 +496,8 @@ const subtitleHtml =
 
           var headerD = run.maxTs ? new Date(run.maxTs) : null;
           var headerOk = headerD && !Number.isNaN(headerD.getTime());
-          var headerDate = headerOk ? dateFmt.format(headerD) : "—";
-          var headerTime = headerOk ? timeFmt.format(headerD) : "—";
+          var headerDate = headerOk && headerD ? dateFmt.format(headerD) : "—";
+          var headerTime = headerOk && headerD ? timeFmt.format(headerD) : "—";
           html += '<section class="space-y-3"><h3 class="flex flex-wrap items-baseline gap-x-1 text-sm font-normal text-slate-200">';
           html +=
             "<span>" +
@@ -586,7 +594,7 @@ const subtitleHtml =
         loadMoreBtn.classList.toggle("hidden", !hasMore);
       }
 
-      function escapeHtml(s) {
+      function escapeHtml(s: unknown): string {
         return String(s)
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
@@ -641,8 +649,8 @@ const subtitleHtml =
       var sourceWrap = root.querySelector("[data-source-buttons]");
       if (sevWrap) {
         sevWrap.addEventListener("click", function (e) {
-          var t = e.target;
-          if (t.tagName !== "BUTTON") return;
+          var t = e.target as Element | null;
+          if (!t || t.tagName !== "BUTTON") return;
           var v = t.getAttribute("data-severity");
           selectedSeverity = v == null ? "" : v;
           setButtonGroup(sevWrap, "data-severity", selectedSeverity);
@@ -651,8 +659,8 @@ const subtitleHtml =
       }
       if (dimWrap) {
         dimWrap.addEventListener("click", function (e) {
-          var t = e.target;
-          if (t.tagName !== "BUTTON") return;
+          var t = e.target as Element | null;
+          if (!t || t.tagName !== "BUTTON") return;
           var v = t.getAttribute("data-dimension");
           selectedDimension = v == null ? "" : v;
           setButtonGroup(dimWrap, "data-dimension", selectedDimension);
@@ -661,8 +669,8 @@ const subtitleHtml =
       }
       if (sourceWrap) {
         sourceWrap.addEventListener("click", function (e) {
-          var t = e.target;
-          if (t.tagName !== "BUTTON") return;
+          var t = e.target as Element | null;
+          if (!t || t.tagName !== "BUTTON") return;
           var v = t.getAttribute("data-source");
           selectedSource = v == null ? "" : v;
           setButtonGroup(sourceWrap, "data-source", selectedSource);
@@ -671,8 +679,8 @@ const subtitleHtml =
       }
       if (repoWrap) {
         repoWrap.addEventListener("click", function (e) {
-          var t = e.target;
-          if (t.tagName !== "BUTTON") return;
+          var t = e.target as Element | null;
+          if (!t || t.tagName !== "BUTTON") return;
           var v = t.getAttribute("data-repo");
           selectedRepo = v == null ? "" : v;
           setButtonGroup(repoWrap, "data-repo", selectedRepo);
