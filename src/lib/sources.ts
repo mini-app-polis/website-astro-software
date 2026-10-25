@@ -25,7 +25,7 @@
  * must treat the two as equivalent.
  *
  * Retired: `flow_hook` and `prefect_webhook` (Prefect mechanisms, replaced
- * by `queue_consumer` in ecosystem-standards ADR-009). Old rows may still
+ * by `queue_consumer` in ecosystem-standards ADR-0009). Old rows may still
  * carry them; they fall into the `pipeline` bucket as unknown sources do.
  */
 
