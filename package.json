@@ -21,8 +21,8 @@
   "homepage": "https://github.com/mini-app-polis/website-astro-software#readme",
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",
-    "astro": "7.3.8",
-    "js-yaml": "^5.4.3",
+    "astro": "7.4.0",
+    "js-yaml": "^5.5.0",
     "tailwindcss": "^4.1.18"
   },
   "devDependencies": {
