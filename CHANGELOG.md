@@ -1,3 +1,10 @@
+## [2.3.13](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.12...v2.3.13) (2026-10-26)
+
+
+### Bug Fixes
+
+* stop the build without its API and Turnstile values, and build canonical URLs from Astro.site ([89abe8f](https://github.com/mini-app-polis/website-astro-software/commit/89abe8ff8092a0e76227fa76fa5dbd7046310e23))
+
 ## [2.3.12](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.11...v2.3.12) (2026-10-25)
 
 
