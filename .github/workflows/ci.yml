@@ -45,7 +45,12 @@ jobs:
 
       - name: Build
         env:
-          PUBLIC_API_URL: https://courteous-purpose-production.up.railway.app
+          # The build stops without these. CI only proves the site builds and
+          # type-checks, so it points at the development API and uses
+          # Cloudflare's test site key, which passes every challenge. Pages
+          # builds carry the real values, set by infra.
+          PUBLIC_API_URL: https://dev-api.kaianolevine.com
+          PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
         run: npm run build
 
   release:

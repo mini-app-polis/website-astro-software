@@ -53,15 +53,16 @@ This repo uses semantic-release for automated versioning on merge to `main`.
 
 - `feat:` → minor bump
 - `fix:` → patch bump
-- `feat!:` / `BREAKING CHANGE` → major bump
 - `chore/docs/refactor/test/ci` → no bump
+
+Don't use `!` after the type or a `BREAKING CHANGE:` footer. Either one cuts a major, and nothing consumes this site, so a major says nothing. Describe a moved URL or a dropped page in the commit body and land it as a `feat` or `fix`.
 
 Never manually edit `package.json` version or `CHANGELOG.md`. Both are managed automatically.
 
 ## Deploy (Cloudflare Pages)
 
 1. Connect this Git repository in Cloudflare Pages.
-2. Set `PUBLIC_API_URL` and `PUBLIC_TURNSTILE_SITE_KEY` in Pages environment variables (not as secrets — they're build-time and baked into the HTML/JS).
+2. `PUBLIC_API_URL` and `PUBLIC_TURNSTILE_SITE_KEY` are Pages environment variables, set by Terraform in `infra` (not secrets — they're build-time and baked into the HTML/JS). `astro build` stops when either is unset.
 3. Build command: `astro build`
 4. Output directory: `dist`
 
