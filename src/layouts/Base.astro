@@ -17,9 +17,8 @@ const {
   ogType = "website",
 } = Astro.props;
 
-const siteOrigin = import.meta.env.PUBLIC_SITE_URL ?? "https://software.kaianolevine.com";
-const canonicalUrl = new URL(Astro.url.pathname, siteOrigin).href;
-const ogImageUrl = new URL(ogImage, siteOrigin).href;
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site).href;
+const ogImageUrl = new URL(ogImage, Astro.site).href;
 const pageTitle = title === "Kaiano Levine" ? title : `${title} — Kaiano Levine`;
 
 const fontsUrl =
