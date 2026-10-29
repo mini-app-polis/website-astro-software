@@ -4,17 +4,12 @@
  *
  * ## Why this is keyed on the repository
  *
- * It did not used to be. Conformance ran as one nightly sweep over the whole
- * fleet, so every repo's deterministic findings shared a run_id and a
- * timestamp, and "the latest deterministic run" was a single global fact.
- * Filtering on the cluster alone was correct, and cheaper.
- *
- * Evaluation is now triggered per repository on release (evaluator-cog
- * ADR-0004). One repo cutting a version produces conformance_deterministic
+ * Evaluation is triggered both as a fleet sweep and per repository on
+ * release. One repo cutting a version produces conformance_deterministic
  * rows for itself, with a fresh run_id and a newer timestamp than the last
- * sweep. Under the old rule that run became the bar for every repo, so a
- * single release blanked the conformance findings of the other fifteen and
- * the board looked clean because it was empty.
+ * sweep. Filtering on the cluster alone would make that run the bar for
+ * every repo, so a single release would blank the conformance findings of
+ * every other repo and the board would look clean because it was empty.
  *
  * The rule that holds under both trigger shapes is the one the API already
  * applies server-side: latest run per repository per type. A fleet sweep

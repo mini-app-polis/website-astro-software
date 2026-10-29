@@ -53,7 +53,7 @@ export function normalizeSeverity(level: unknown): EmissionSeverity {
 }
 
 /**
- * Sort rank for severity — lower number = higher priority. Used to order
+ * Sort rank for severity — lower number = higher priority. Orders
  * finding lists so the loudest items surface first.
  */
 export function severityRank(level: unknown): number {

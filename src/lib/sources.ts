@@ -90,12 +90,9 @@ export function sourceToBucket(source: unknown): Exclude<Bucket, "all"> {
  * standards-version bumps.
  *
  * This is the second key in the latest-run filter; the first is the
- * repository. There used to be a `sourceCategory` helper here that split
- * sources into "sweep" (fleet-wide, one run for every repo) and "per-repo",
- * and the filter keyed sweep sources on the cluster alone. That premise
- * died with the nightly cron: `conformance_deterministic` now arrives both
- * ways, from a fleet sweep and from a single repository's release. See
- * lib/latest-run.ts.
+ * repository. The cluster alone is not enough: `conformance_deterministic`
+ * arrives both from a fleet sweep and from a single repository's release.
+ * See lib/latest-run.ts.
  *
  *   deterministic: conformance_deterministic + data_quality + standards_drift
  *   llm:           conformance_llm

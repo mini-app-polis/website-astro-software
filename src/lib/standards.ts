@@ -1,19 +1,15 @@
 /**
  * The standards catalog, as the site reads it.
  *
- * The site used to walk the ecosystem-standards repo at build time:
- * index.yaml to discover the domain files, then every domain file, then
- * package.json for the version. It now reads one compiled catalog from
- * the API, in the browser, like every other live panel on this site.
+ * The site reads one compiled catalog from the API, in the browser, like
+ * every other live panel on this site.
  *
- * Two things change as a result. The site no longer depends on GitHub for
- * rule text — raw.githubusercontent had been chosen over api.github.com
- * to dodge a 60-req/hour rate limit that Cloudflare Pages build
- * containers kept tripping, and that whole problem goes away with the
- * fetch. And the rules stop being as stale as the last site deploy:
- * nothing rebuilds this site when the standards release, so a build-time
- * fetch meant the page could sit months behind the catalog it claimed to
- * show.
+ * Two things follow from that. The site does not depend on GitHub for
+ * rule text, so the build is not exposed to GitHub's rate limits. And the
+ * rules are as current as the published catalog rather than the last site
+ * deploy: nothing rebuilds this site when the standards release, so a
+ * build-time fetch would let the page sit months behind the catalog it
+ * claims to show.
  *
  * The catalog is always served from production. Catalogs are published
  * only from ecosystem-standards' release job on `main`, so there is no
@@ -80,9 +76,8 @@ export async function fetchCatalog(): Promise<StandardsCatalog | null> {
 /**
  * Group rules by their domain, sorted for display.
  *
- * The domain comes off each rule now. It used to require reading
- * index.yaml's `files:` list to discover which files existed and then
- * fetching each one — the catalog resolves that at build time.
+ * The domain comes off each rule; the catalog resolves which domain each
+ * rule belongs to when it is compiled.
  */
 export function groupByDomain(rules: Rule[]): Array<{ key: string; label: string; rules: Rule[] }> {
   const byKey = new Map<string, Rule[]>();
