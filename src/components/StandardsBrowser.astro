@@ -4,16 +4,14 @@
  *
  * A browsable view of the rule catalog, grouped by domain.
  *
- * Reads the published catalog from the API in the browser. It used to
- * assemble the same view at build time from index.yaml plus every
- * standards/*.yaml in the repo — roughly nineteen GitHub requests per
- * build, and a page that stayed as stale as the last site deploy, since
- * nothing rebuilds this site when the standards release.
+ * Reads the published catalog from the API in the browser, so the page is
+ * as current as the catalog rather than the last site deploy — nothing
+ * rebuilds this site when the standards release.
  *
  * Rules with `checkable: false` are shown rather than hidden. They are
  * tracked rules the evaluator has no check for, and the catalog carries
  * them precisely so they read as unverified rather than absent — hiding
- * them here would restore the problem the catalog was changed to fix.
+ * them here would make unverified rules look absent.
  */
 ---
 
