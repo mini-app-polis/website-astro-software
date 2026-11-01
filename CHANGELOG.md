@@ -1,3 +1,10 @@
+## [2.3.14](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.13...v2.3.14) (2026-11-01)
+
+
+### Bug Fixes
+
+* add logger module and doc comments for conformance ([c789819](https://github.com/mini-app-polis/website-astro-software/commit/c789819117e1d56234ea600d3b7e0e5b6d4a1d1b))
+
 ## [2.3.13](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.12...v2.3.13) (2026-10-26)
 
 
