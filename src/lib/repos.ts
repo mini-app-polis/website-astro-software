@@ -163,6 +163,7 @@ export function visibilityClass(isPrivate: unknown): string {
     : "text-accent border-accent/30 bg-accent/10";
 }
 
+/** Badge text for a repo's visibility: "private" or "public". */
 export function visibilityLabel(isPrivate: unknown): string {
   return isPrivate ? "private" : "public";
 }
@@ -251,6 +252,7 @@ export const ORG_FAILURE_LABELS: Record<OrgFailureReason, string> = {
   unreachable: "GitHub could not be reached",
 };
 
+/** Reader-facing reason an org is missing, falling back to the unreachable wording for an unknown reason. */
 export function orgFailureLabel(reason: unknown): string {
   const key = String(reason ?? "") as OrgFailureReason;
   return ORG_FAILURE_LABELS[key] ?? ORG_FAILURE_LABELS.unreachable;

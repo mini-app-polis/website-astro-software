@@ -106,6 +106,7 @@ export type SweepCluster =
   | "unknown"
   | string;
 
+/** Map a finding source to the sweep cluster whose runs it belongs to. */
 export function sweepCluster(source: unknown): SweepCluster {
   const s = String(source ?? "").trim();
   if (
