@@ -17,6 +17,7 @@
  */
 
 import { apiFetch } from "./api";
+import { logger } from "./logger";
 
 // ── Catalog schema ────────────────────────────────────────────
 //
@@ -123,6 +124,11 @@ async function getYamlLoader(): Promise<(input: string) => unknown> {
   return yamlLoad;
 }
 
+/**
+ * Fetch a YAML file from the ecosystem-standards repo and parse it, or null.
+ *
+ * Never throws: a failed request or parse is logged and returns null.
+ */
 export async function fetchYaml<T>(path: string): Promise<T | null> {
   try {
     const res = await fetch(`${STANDARDS_RAW_BASE}/${path}`);
@@ -130,7 +136,12 @@ export async function fetchYaml<T>(path: string): Promise<T | null> {
     const load = await getYamlLoader();
     return load(await res.text()) as T;
   } catch (error) {
-    console.error(`Failed to load ${path} from ${STANDARDS_RAW_BASE}`, error);
+    logger.error({
+      event: "standards_yaml_fetch_failed",
+      category: "api",
+      context: { path, base: STANDARDS_RAW_BASE },
+      error,
+    });
     return null;
   }
 }
@@ -172,6 +183,7 @@ export interface Ecosystem {
   monorepos?: EcosystemMonorepo[];
 }
 
+/** Fetch and parse ecosystem.yaml, the service inventory, or null if it cannot be loaded. */
 export async function fetchEcosystem(): Promise<Ecosystem | null> {
   return fetchYaml<Ecosystem>("ecosystem.yaml");
 }

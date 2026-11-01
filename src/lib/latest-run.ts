@@ -43,6 +43,7 @@ export interface RunAccessors<T> {
   timestamp: (f: T) => number;
 }
 
+/** Keep only the findings from the newest run of each (repository, cluster) pair. */
 export function keepLatestRunPerRepoCluster<T>(
   findings: T[],
   read: RunAccessors<T>,
