@@ -577,6 +577,21 @@ const subtitleHtml =
                 escapeHtml(findingEvalVersion) +
                 "</span>"
               : "";
+            // Per-finding repo_version / repo_commit: the version of the
+            // application the evaluation read (a ref, a release tag on a
+            // release-triggered evaluation) and its commit. With the two
+            // badges above it says what was graded, against what, by what.
+            // Absent on rows that predate it and on pipeline self-reports.
+            var findingRepoVersion = String(f.repo_version || "").trim();
+            var findingRepoCommit = String(f.repo_commit || "").trim().slice(0, 7);
+            var repoVersionText = [findingRepoVersion, findingRepoCommit]
+              .filter(Boolean)
+              .join(" · ");
+            var repoVersionBadge = repoVersionText
+              ? '<span class="font-mono text-slate-500">Application: ' +
+                escapeHtml(repoVersionText) +
+                "</span>"
+              : "";
             html +=
               '<div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-white/5 pt-3 text-xs text-slate-500">';
             html += repoBadge;
@@ -584,6 +599,7 @@ const subtitleHtml =
               '<span class="font-mono text-slate-400">' +
               escapeHtml(ridFull) +
               "</span>";
+            html += repoVersionBadge;
             html += stdVersionBadge;
             html += evalVersionBadge;
             html += "</div></article>";

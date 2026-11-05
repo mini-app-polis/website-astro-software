@@ -22,6 +22,10 @@ const EVALUATION = {
   suggestion: "string|null",
   standards_version: "string|null",
   evaluator_version: "string|null",
+  // The application version a finding graded (repo_version, repo_commit).
+  // Optional until every API the site reads has migration 092.
+  "repo_version?": "string|null",
+  "repo_commit?": "string|null",
   "source?": "string|null",
   "flow_name?": "string|null",
   evaluated_at: "string",
