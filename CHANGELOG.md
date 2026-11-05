@@ -1,3 +1,10 @@
+# [2.4.0](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.15...v2.4.0) (2026-11-05)
+
+
+### Features
+
+* **pipeline:** show the application version each finding was evaluated at ([53bf767](https://github.com/mini-app-polis/website-astro-software/commit/53bf76772b6b4f505580dd5a48a22691b0db7fc9))
+
 ## [2.3.15](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.14...v2.3.15) (2026-11-01)
 
 
