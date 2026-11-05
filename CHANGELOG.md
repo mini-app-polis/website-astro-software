@@ -1,3 +1,10 @@
+## [2.4.1](https://github.com/mini-app-polis/website-astro-software/compare/v2.4.0...v2.4.1) (2026-11-05)
+
+
+### Bug Fixes
+
+* **pipeline:** one footer line per finding: the repo's version beside it, the standards and evaluator versions together ([965a778](https://github.com/mini-app-polis/website-astro-software/commit/965a778e21e24bd1f9e1b3dadc15a3b7b917cc9b))
+
 # [2.4.0](https://github.com/mini-app-polis/website-astro-software/compare/v2.3.15...v2.4.0) (2026-11-05)
 
 
