@@ -1,3 +1,10 @@
+## [2.4.2](https://github.com/mini-app-polis/website-astro-software/compare/v2.4.1...v2.4.2) (2026-11-06)
+
+
+### Bug Fixes
+
+* **layout:** mobile nav menu, left-truncate repo names, drop push age when cramped ([3501bc9](https://github.com/mini-app-polis/website-astro-software/commit/3501bc967cc198f3c98561cb837dd85db633c137))
+
 ## [2.4.1](https://github.com/mini-app-polis/website-astro-software/compare/v2.4.0...v2.4.1) (2026-11-05)
 
 
