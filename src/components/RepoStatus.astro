@@ -15,7 +15,7 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
     class="hidden rounded-lg border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-slate-400"
     data-repo-error
   >
-    Repository status is unavailable right now \u2014 the board could not be read
+    Repository status is unavailable right now — the board could not be read
     from GitHub. It reappears on the next successful refresh.
   </div>
 
@@ -222,9 +222,22 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
         url === null
           ? `<span class="${cls}">${text}</span>`
           : `<a href="${href}" rel="noopener" class="${cls} hover:text-accent">${text}</a>`;
-      const meta: string[] = [];
-      if (repo.language) meta.push(esc(repo.language));
-      if (repo.pushed_at) meta.push(`pushed ${esc(relativeTime(repo.pushed_at))}`);
+      // Push age is the least important detail in the row. It is shown when
+      // the row stacks (narrow) or has room to spare (lg+), and dropped in
+      // between so it never takes width from the repository name.
+      const pushed = repo.pushed_at
+        ? `<span class="sm:hidden lg:inline">${repo.language ? "\u00b7 " : ""}pushed ${esc(relativeTime(repo.pushed_at))}</span>`
+        : "";
+      const meta = `${repo.language ? `<span>${esc(repo.language)}</span>` : ""}${pushed}`;
+      // The org prefix is shared by most rows, so the name is truncated from
+      // the left: an RTL box puts the ellipsis at the start, and the LTR
+      // isolate keeps the slug's characters in their normal order.
+      const name = `<bdi dir="ltr">${slug}</bdi>`;
+      const nameCls = "min-w-0 truncate text-left font-medium text-slate-100";
+      const nameEl =
+        url === null
+          ? `<span dir="rtl" title="${slug}" class="${nameCls}">${name}</span>`
+          : `<a href="${url}" rel="noopener" dir="rtl" title="${slug}" class="${nameCls} hover:text-accent">${name}</a>`;
 
       const row = document.createElement("article");
       row.className =
@@ -232,9 +245,11 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
       row.style.setProperty("--d", `${Math.min(idx, 12) * 40}ms`);
       row.innerHTML = `
         <div class="min-w-0">
-          <div class="flex min-w-0 items-center gap-2">
-            <span class="h-2 w-2 shrink-0 rounded-full ${buildDotClass(state)}"></span>
-            ${link(`${url}`, "min-w-0 truncate font-medium text-slate-100", slug)}
+          <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 sm:flex-nowrap">
+            <span class="flex min-w-0 max-w-full items-center gap-2">
+              <span class="h-2 w-2 shrink-0 rounded-full ${buildDotClass(state)}"></span>
+              ${nameEl}
+            </span>
             <span class="shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-mono ${buildClass(state)}">${buildLabel(state)}</span>
             <span class="shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-mono ${visibilityClass(repo.private)}">${visibilityLabel(repo.private)}</span>
           </div>
@@ -244,7 +259,7 @@ import { REPO_FILTERS, REPO_FILTER_LABELS } from "../lib/repos";
           ${link(`${url}/pulls`, "", plural(Number(repo.open_pull_requests ?? 0), "PR", "PRs"))}
           ${link(`${url}/issues`, "", plural(Number(repo.open_issues ?? 0), "issue", "issues"))}
           ${link(`${url}/branches`, "", plural(Number(repo.branches ?? 0), "branch", "branches"))}
-          <span class="text-slate-600">${meta.join(" \u00b7 ")}</span>
+          <span class="flex gap-1 text-slate-600">${meta}</span>
         </div>
       `;
       return row;
