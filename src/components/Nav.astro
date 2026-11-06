@@ -43,7 +43,7 @@ function isExactActive(href: string) {
 }
 ---
 
-<nav class="mx-auto flex max-w-5xl items-center justify-between px-6 py-6">
+<nav class="relative mx-auto flex max-w-5xl items-center justify-between px-6 py-6">
   <a href="/" class="group flex items-baseline gap-3">
     <span class="font-display text-lg tracking-tight text-slate-100 group-hover:text-accent">
       Kaiano Levine
@@ -51,7 +51,49 @@ function isExactActive(href: string) {
     <span class="hidden text-xs font-mono text-slate-400 sm:inline">portfolio</span>
   </a>
 
-  <div class="flex gap-5 text-sm">
+  <button
+    type="button"
+    class="inline-flex items-center rounded-lg border border-white/10 p-2 text-slate-300 transition-colors hover:text-slate-100 lg:hidden"
+    data-nav-mobile-toggle
+    aria-controls="nav-mobile-menu"
+    aria-expanded="false"
+    aria-label="Open menu"
+  >
+    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M3 6h14M3 10h14M3 14h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+    </svg>
+  </button>
+
+  <div
+    id="nav-mobile-menu"
+    class="absolute inset-x-4 top-full z-30 hidden rounded-xl border border-white/10 bg-[#0b0f15] p-2 shadow-soft lg:hidden"
+    data-nav-mobile-menu
+  >
+    {items.map((item) => {
+      const links = item.children && item.children.length > 0
+        ? item.children.map((child) => ({
+            href: child.href,
+            label: `${item.label} · ${child.label}`,
+            active: isExactActive(child.href),
+          }))
+        : [{ href: item.href, label: item.label, active: isActive(item.href) }];
+      return links.map((link) => (
+        <a
+          href={link.href}
+          aria-current={link.active ? "page" : undefined}
+          class={`block rounded-lg px-3 py-2.5 text-sm transition-colors ${
+            link.active
+              ? "bg-accent/15 text-accent"
+              : "text-slate-300 hover:bg-white/[0.04] hover:text-slate-100"
+          }`}
+        >
+          {link.label}
+        </a>
+      ));
+    })}
+  </div>
+
+  <div class="hidden gap-5 text-sm lg:flex">
     {items.map((item) => {
       const active = isActive(item.href);
       const baseLinkClass = `transition-colors ${
@@ -142,6 +184,28 @@ function isExactActive(href: string) {
 </nav>
 
 <script is:inline>
+  (function () {
+    var mobileToggle = document.querySelector("[data-nav-mobile-toggle]");
+    var mobileMenu = document.querySelector("[data-nav-mobile-menu]");
+    if (mobileToggle && mobileMenu) {
+      var setMobile = function (open) {
+        mobileMenu.classList.toggle("hidden", !open);
+        mobileToggle.setAttribute("aria-expanded", open ? "true" : "false");
+        mobileToggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+      };
+      mobileToggle.addEventListener("click", function (e) {
+        e.stopPropagation();
+        setMobile(mobileMenu.classList.contains("hidden"));
+      });
+      document.addEventListener("click", function (e) {
+        if (!mobileMenu.contains(e.target)) setMobile(false);
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") setMobile(false);
+      });
+    }
+  })();
+
   (function () {
     var dropdowns = document.querySelectorAll("[data-nav-dropdown]");
     if (!dropdowns.length) return;
