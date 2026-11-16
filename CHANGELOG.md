@@ -1,3 +1,10 @@
+## [2.4.4](https://github.com/mini-app-polis/website-astro-software/compare/v2.4.3...v2.4.4) (2026-11-16)
+
+
+### Bug Fixes
+
+* **deps:** bump the minor-and-patch group with 3 updates ([24644ca](https://github.com/mini-app-polis/website-astro-software/commit/24644ca8cef5dda608fc8368f396309a80cf8fc8))
+
 ## [2.4.3](https://github.com/mini-app-polis/website-astro-software/compare/v2.4.2...v2.4.3) (2026-11-08)
 
 
