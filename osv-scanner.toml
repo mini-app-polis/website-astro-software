@@ -8,3 +8,19 @@
 # id = "GHSA-xxxx-xxxx-xxxx"
 # ignoreUntil = 2026-12-31
 # reason = "..."
+
+# picomatch: every version through 4.0.7, the newest published, can be made
+# to backtrack exponentially by a glob pattern like +(*) (GHSA-fc5q-39xc-vjpf,
+# 2026-11). It arrives only through astro and vite, which match the files of
+# this repository against globs written in its own config during the build.
+# This site is static output served by Cloudflare Pages: the package runs only
+# at build time, in CI and in the Pages build, on patterns nobody outside the
+# repository supplies.
+#
+# To clear: once picomatch publishes a fix, run `npm update picomatch` and
+# delete the entry. `ignoreUntil` makes the scan fail again on that date.
+
+[[IgnoredVulns]]
+id = "GHSA-fc5q-39xc-vjpf"
+ignoreUntil = 2027-01-17
+reason = "picomatch <=4.0.7, no fixed release; build-time only via astro and vite matching the repository's own globs, never on user input"
