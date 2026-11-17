@@ -1,3 +1,10 @@
+## [2.4.5](https://github.com/mini-app-polis/website-astro-software/compare/v2.4.4...v2.4.5) (2026-11-17)
+
+
+### Bug Fixes
+
+* **security:** except picomatch GHSA-fc5q-39xc-vjpf at build time until a fix is published ([5c7b605](https://github.com/mini-app-polis/website-astro-software/commit/5c7b605dc6ca7cd55d12d57105cad0fed6e7ba05))
+
 ## [2.4.4](https://github.com/mini-app-polis/website-astro-software/compare/v2.4.3...v2.4.4) (2026-11-16)
 
 
